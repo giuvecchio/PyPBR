@@ -6,7 +6,8 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="pypbr",  # Your package name
-    version="0.1.0a",
+    use_scm_version=True,
+    setup_requires=["setuptools_scm"],
     author="Giuseppe Vecchio",
     author_email="giuseppevecchio@hotmail.com",
     description="A Python library for easy and fast manipulation of PBR materials with PyTorch integration.",
