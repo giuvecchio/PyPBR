@@ -1,10 +1,11 @@
 import torch
 from torchvision.transforms.functional import to_pil_image
 
-from pypbr import CookTorranceBRDF, Material, load_material_from_folder
+from pypbr import CookTorranceBRDF, load_material_from_folder
 
 # Load material
-material = load_material_from_folder("./data/tiles")
+material = load_material_from_folder("./data/tiles", preferred_workflow="metallic")
+
 H, W = 512, 512
 material.resize((H, W)).tile(2)
 
@@ -19,8 +20,6 @@ light_size = 1.0
 
 # Evaluate the BRDF to get the reflected color
 reflected_color = brdf(material, view_dir, light_dir, light_intensity, light_size)
-
-print(reflected_color.shape)
 
 # Convert to PIL Image and display
 image = to_pil_image(reflected_color)
