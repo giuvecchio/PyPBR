@@ -11,6 +11,7 @@ Classes:
     DiffuseSpecularMaterial: Represents a PBR material using diffuse and specular maps.
 """
 
+import math
 from typing import Optional, Tuple, Union
 
 import numpy as np
@@ -18,8 +19,14 @@ import torch
 import torch.nn.functional as F
 from PIL import Image
 from torchvision.transforms import functional as TF
+from torchvision.transforms.functional import rotate
 
-from .utils import linear_to_srgb, srgb_to_linear
+from .utils import (
+    linear_to_srgb,
+    srgb_to_linear,
+    rotate_normals,
+    invert_normal,
+)
 
 
 class MaterialBase:
@@ -240,6 +247,72 @@ class MaterialBase:
                 self._maps[name] = map_value.repeat(1, num_tiles, num_tiles)
         return self
 
+    def rotate(
+        self,
+        angle: float,
+        expand: bool = False,
+        padding_mode: str = "constant",
+    ):
+        """
+        Rotate all texture maps by a given angle.
+
+        Args:
+            angle (float): The rotation angle in degrees.
+            expand (bool): Whether to expand the output image to hold the entire rotated image.
+            padding_mode (str): Padding mode. Options are 'constant' or 'circular'.
+
+        Returns:
+            MaterialBase: Returns self for method chaining.
+        """
+        assert padding_mode in [
+            "constant",
+            "circular",
+        ], "Invalid padding mode. Must be 'constant' or 'circular'."
+
+        for name, map_value in self._maps.items():
+            if map_value is not None:
+                # Get the height and width of the image (Assuming map_value shape is (C, H, W))
+                height, width = map_value.shape[-2:]
+
+                # Convert the rotation angle from degrees to radians
+                angle_rad = math.radians(angle)
+
+                # Determine the target size after rotation
+                if expand:
+                    # When expanding, we compute the new size required to fit the rotated image
+                    new_width = math.ceil(
+                        abs(width * math.cos(angle_rad))
+                        + abs(height * math.sin(angle_rad))
+                    )
+                    new_height = math.ceil(
+                        abs(width * math.sin(angle_rad))
+                        + abs(height * math.cos(angle_rad))
+                    )
+                    height, width = new_height, new_width
+
+                # Compute symmetric padding amounts
+                padded_size = math.ceil(math.sqrt(height**2 + width**2))
+                pad_size = padded_size - height
+
+                # Pad the image
+                map_value = F.pad(
+                    map_value, (pad_size, pad_size, pad_size, pad_size), padding_mode
+                )
+
+                # Rotate the padded image
+                rotated_map = rotate(map_value, angle, expand=True)
+
+                # Crop the rotated image to the target size
+                rotated_map = TF.center_crop(rotated_map, (height, width)).contiguous()
+
+                if name == "normal":
+                    # Rotate the normal vectors
+                    rotated_map = rotate_normals(rotated_map, angle)
+
+                self._maps[name] = rotated_map
+
+        return self
+
     def invert_normal(self):
         """
         Invert the Y component of the normal map.
@@ -248,9 +321,7 @@ class MaterialBase:
             MaterialBase: Returns self for method chaining.
         """
         normal = self._maps.get("normal", None)
-        if normal is not None:
-            normal[1] = 1 - normal[1]
-        return self
+        return invert_normal(normal)
 
     def apply_transform(self, transform):
         """
