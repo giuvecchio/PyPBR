@@ -27,6 +27,7 @@ def load_material_from_folder(
     folder_path: str,
     map_names: Optional[Dict[str, List[str]]] = None,
     preferred_workflow: Optional[str] = None,
+    is_srgb: bool = True,
 ) -> MaterialBase:
     """
     Load material maps from a folder using naming conventions.
@@ -35,6 +36,7 @@ def load_material_from_folder(
         folder_path (str): Path to the folder containing material maps.
         map_names (Optional[Dict[str, List[str]]]): Optional dictionary specifying map types and their possible filenames.
         preferred_workflow (Optional[str]): Preferred workflow ('metallic' or 'specular'). If not specified, the workflow is determined based on available maps.
+        is_srgb (bool): Whether the albedo and specular maps are in sRGB color space.
 
     Returns:
         MaterialBase: An instance of a Material subclass with loaded maps.
@@ -119,8 +121,8 @@ def load_material_from_folder(
     # Create the material instance
     material_instance = material_class(
         **material_kwargs,
-        albedo_is_srgb=True,  # Assuming albedo is in sRGB space
-        specular_is_srgb=True,  # Assuming specular map is in sRGB space
+        albedo_is_srgb=is_srgb,  # Assuming albedo is in sRGB space
+        specular_is_srgb=is_srgb,  # Assuming specular map is in sRGB space
     )
 
     return material_instance
