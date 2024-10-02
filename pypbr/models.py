@@ -18,7 +18,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 
-from .material import Material
+from .material import MaterialBase
 from .utils import linear_to_srgb
 
 
@@ -57,7 +57,7 @@ class CookTorranceBRDF(BRDFModel):
 
     def forward(
         self,
-        material: Material,
+        material: MaterialBase,
         view_dir: Tensor,
         light_dir_or_position: Tensor,
         light_intensity: Tensor,
@@ -68,13 +68,14 @@ class CookTorranceBRDF(BRDFModel):
         Evaluate the Cook-Torrance BRDF for the given directions.
 
         Args:
-            material (Material): Material properties.
+            material (MaterialBase): Material properties (can be BasecolorMetallicMaterial or DiffuseSpecularMaterial).
             view_dir (Tensor): View direction vector, shape (3,).
             light_dir_or_position (Tensor): Light direction vector (for directional light, shape (3,))
                                             or light position vector (for point light, shape (3,)).
             light_intensity (Tensor): Light intensity, shape (3,).
             light_size (float): Size of the light source (for point light only).
             return_srgb (bool): Whether to return the color in sRGB space.
+
         Returns:
             Tensor: The reflected color at each point, shape (3, H, W).
         """
@@ -85,11 +86,35 @@ class CookTorranceBRDF(BRDFModel):
         # Normalize view direction
         view_dir = F.normalize(view_dir, dim=0)
 
-        # Material properties (textures)
-        basecolor = material.linear_basecolor.to(self.device)  # Shape (3, H, W)
-        metallic = material.metallic.to(self.device)  # Shape (1, H, W)
+        # Get the material properties
+        # Common properties
         roughness = material.roughness.to(self.device)  # Shape (1, H, W)
-        normal_map = material.normal.to(self.device)  # Shape (3, H, W) or None
+        normal_map = (
+            material.normal.to(self.device) if material.normal is not None else None
+        )
+
+        # Determine the workflow based on material properties
+        if hasattr(material, "metallic") and material.metallic is not None:
+            # Basecolor-Metallic workflow
+            basecolor = material.linear_albedo.to(self.device)  # Shape (3, H, W)
+            metallic = material.metallic.to(self.device)  # Shape (1, H, W)
+
+            # F0 is interpolated between dielectric and conductor
+            F0 = torch.lerp(torch.full_like(basecolor, 0.04), basecolor, metallic)
+        elif hasattr(material, "specular") and material.specular is not None:
+            # Diffuse-Specular workflow
+            basecolor = material.linear_albedo.to(
+                self.device
+            )  # Diffuse color, shape (3, H, W)
+            specular = material.linear_specular.to(self.device)  # Shape (3, H, W)
+
+            # F0 is the specular map
+            F0 = specular
+            metallic = None  # Metallic is not used in this workflow
+        else:
+            raise ValueError(
+                "Material must have either 'metallic' or 'specular' property."
+            )
 
         # Get the size of the texture maps
         _, H, W = basecolor.shape
@@ -138,7 +163,7 @@ class CookTorranceBRDF(BRDFModel):
 
         # Use the normal map if provided, else use default normals
         if normal_map is not None:
-            normal = normal_map
+            normal = normal_map.to(self.device)
         else:
             # Default normals pointing in +Z direction
             normal = (
@@ -156,7 +181,6 @@ class CookTorranceBRDF(BRDFModel):
         )  # Shape (3, H, W)
 
         # Fresnel term
-        F0 = torch.lerp(torch.full_like(basecolor, 0.04), basecolor, metallic)
         cos_theta = torch.clamp(
             (half_vector * view_dir_map).sum(dim=0, keepdim=True), 0.0, 1.0
         )
@@ -174,15 +198,18 @@ class CookTorranceBRDF(BRDFModel):
         denom = 4.0 * NdotV * NdotL + 1e-7
 
         # Specular term
-        specular = (Fs * NDF * G) / denom
+        specular = (Fs * NDF * G) / denom  # Shape (3, H, W)
 
-        # kS is the specular component, kD is the diffuse component
-        kS = Fs
-        kD = 1.0 - kS
-        kD *= 1.0 - metallic
+        # Compute kD (diffuse component) differently based on the workflow
+        if hasattr(material, "metallic") and material.metallic is not None:
+            # Metallic-Roughness workflow
+            kD = (1.0 - Fs) * (1.0 - metallic)  # Shape (3, H, W)
+        else:
+            # Diffuse-Specular workflow
+            kD = 1.0 - Fs  # Shape (3, H, W)
 
         # Lambertian diffuse
-        diffuse = kD * basecolor / torch.pi
+        diffuse = kD * basecolor / torch.pi  # Shape (3, H, W)
 
         # Final BRDF
         # Ensure that light_intensity, NdotL, and attenuation are broadcastable
