@@ -43,6 +43,7 @@ class MaterialBase:
         roughness (torch.FloatTensor): The roughness map tensor.
     """
 
+    # Initialization and Attribute Management
     def __init__(
         self,
         albedo: Optional[Union[Image.Image, np.ndarray, torch.FloatTensor]] = None,
@@ -112,6 +113,51 @@ class MaterialBase:
                 f"'{type(self).__name__}' object has no attribute '{name}'"
             )
 
+    def _to_tensor(
+        self, image: Optional[Union[Image.Image, np.ndarray, torch.FloatTensor]]
+    ) -> Optional[torch.FloatTensor]:
+        """
+        Convert an image to a torch tensor.
+
+        Args:
+            image: The image to convert.
+
+        Returns:
+            torch.FloatTensor: The image as a tensor.
+
+        Raises:
+            TypeError: If the input image type is unsupported.
+        """
+        if image is None:
+            return None
+        if isinstance(image, torch.FloatTensor):
+            return image.cpu()
+        elif isinstance(image, np.ndarray):
+            return torch.from_numpy(image).float()
+        elif isinstance(image, Image.Image):
+            # Handle different image modes
+            if image.mode in ["I;16", "I;16B", "I;16L", "I;16N"]:
+                # Convert 16-bit image to NumPy array
+                np_image = np.array(image, dtype=np.uint16)
+                tensor = torch.from_numpy(np_image.astype(np.float32))
+                tensor = tensor.unsqueeze(0)  # Add channel dimension
+                # Normalize to [0, 1] range
+                tensor = tensor / 65535.0
+                return tensor
+            elif image.mode == "F":
+                # 32-bit floating point image
+                np_image = np.array(image, dtype=np.float32)
+                tensor = torch.from_numpy(np_image)
+                tensor = tensor.unsqueeze(0)  # Add channel dimension
+                return tensor
+            else:
+                # For other modes, use torchvision transforms
+                return TF.to_tensor(image)
+        else:
+            raise TypeError(
+                f"Unsupported image type: {type(image)}. Supported types are PIL.Image.Image, np.ndarray, and torch.FloatTensor."
+            )
+
     def _process_map(self, name, value):
         """
         Process the input value and convert it to a tensor if necessary.
@@ -132,23 +178,6 @@ class MaterialBase:
             return tensor
         else:
             return tensor
-
-    @property
-    def linear_albedo(self):
-        """
-        Get the albedo map in linear space.
-
-        Returns:
-            torch.FloatTensor: The albedo map in linear space.
-        """
-        albedo = self._maps.get("albedo", None)
-        if albedo is not None:
-            if self.albedo_is_srgb:
-                return srgb_to_linear(albedo)
-            else:
-                return albedo
-        else:
-            return None
 
     def _process_normal_map(
         self, normal_map: Optional[torch.FloatTensor]
@@ -198,6 +227,41 @@ class MaterialBase:
         normal = F.normalize(normal, dim=0)
         return normal
 
+    # Properties
+    @property
+    def linear_albedo(self):
+        """
+        Get the albedo map in linear space.
+
+        Returns:
+            torch.FloatTensor: The albedo map in linear space.
+        """
+        albedo = self._maps.get("albedo", None)
+        if albedo is not None:
+            if self.albedo_is_srgb:
+                return srgb_to_linear(albedo)
+            else:
+                return albedo
+        else:
+            return None
+
+    @property
+    def size(self) -> Optional[Tuple[int, int]]:
+        """
+        Get the size of the texture maps.
+
+        Returns:
+            Optional[Tuple[int, int]]: A tuple (height, width) representing the size of the texture maps.
+            If multiple maps are present, returns the size of the first non-None map.
+            Returns None if no maps are available.
+        """
+        for map_value in self._maps.values():
+            if map_value is not None:
+                _, height, width = map_value.shape
+                return (height, width)
+        return None
+
+    # Transformation Methods
     def resize(self, size: Union[int, Tuple[int, int]], antialias: bool = True):
         """
         Resize all texture maps to the specified size.
@@ -321,7 +385,8 @@ class MaterialBase:
             MaterialBase: Returns self for method chaining.
         """
         normal = self._maps.get("normal", None)
-        return invert_normal(normal)
+        self._maps["normal"] = invert_normal(normal)
+        return self
 
     def apply_transform(self, transform):
         """
@@ -338,6 +403,7 @@ class MaterialBase:
                 self._maps[name] = transform(map_value)
         return self
 
+    # Color Space Conversion
     def to_linear(self):
         """
         Convert the albedo map to linear space if it's in sRGB.
@@ -364,6 +430,7 @@ class MaterialBase:
             self.albedo_is_srgb = True
         return self
 
+    # Conversion Methods
     def to_numpy(self):
         """
         Convert all texture maps to NumPy arrays.
@@ -394,67 +461,7 @@ class MaterialBase:
                 maps[name] = None
         return maps
 
-    def _to_tensor(
-        self, image: Optional[Union[Image.Image, np.ndarray, torch.FloatTensor]]
-    ) -> Optional[torch.FloatTensor]:
-        """
-        Convert an image to a torch tensor.
-
-        Args:
-            image: The image to convert.
-
-        Returns:
-            torch.FloatTensor: The image as a tensor.
-
-        Raises:
-            TypeError: If the input image type is unsupported.
-        """
-        if image is None:
-            return None
-        if isinstance(image, torch.FloatTensor):
-            return image.cpu()
-        elif isinstance(image, np.ndarray):
-            return torch.from_numpy(image).float()
-        elif isinstance(image, Image.Image):
-            # Handle different image modes
-            if image.mode in ["I;16", "I;16B", "I;16L", "I;16N"]:
-                # Convert 16-bit image to NumPy array
-                np_image = np.array(image, dtype=np.uint16)
-                tensor = torch.from_numpy(np_image.astype(np.float32))
-                tensor = tensor.unsqueeze(0)  # Add channel dimension
-                # Normalize to [0, 1] range
-                tensor = tensor / 65535.0
-                return tensor
-            elif image.mode == "F":
-                # 32-bit floating point image
-                np_image = np.array(image, dtype=np.float32)
-                tensor = torch.from_numpy(np_image)
-                tensor = tensor.unsqueeze(0)  # Add channel dimension
-                return tensor
-            else:
-                # For other modes, use torchvision transforms
-                return TF.to_tensor(image)
-        else:
-            raise TypeError(
-                f"Unsupported image type: {type(image)}. Supported types are PIL.Image.Image, np.ndarray, and torch.FloatTensor."
-            )
-
-    @property
-    def size(self) -> Optional[Tuple[int, int]]:
-        """
-        Get the size of the texture maps.
-
-        Returns:
-            Optional[Tuple[int, int]]: A tuple (height, width) representing the size of the texture maps.
-            If multiple maps are present, returns the size of the first non-None map.
-            Returns None if no maps are available.
-        """
-        for map_value in self._maps.values():
-            if map_value is not None:
-                _, height, width = map_value.shape
-                return (height, width)
-        return None
-
+    # Utility Methods
     def __repr__(self):
         """
         Return a string representation of the Material object.
