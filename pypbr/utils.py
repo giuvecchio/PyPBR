@@ -98,11 +98,11 @@ def rotate_normals(normal_map: torch.FloatTensor, angle: float) -> torch.FloatTe
 
 def invert_normal(normals: torch.FloatTensor) -> torch.FloatTensor:
     """
-    Invert the Y component of the normal map.
+    Invert the Y component of the normal map. The normal map should be normalized.
 
     Returns:
         torch.FloatTensor: The inverted normal map.
     """
     if normals is not None:
-        normals[1] = 1 - normals[1]
+        normals[1] = -normals[1]
     return normals
