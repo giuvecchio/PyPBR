@@ -163,3 +163,5 @@ cython_debug/
 
 # VsCode
 .vscode/
+
+pypbr/_version.py
