@@ -41,3 +41,4 @@ packages = { find = { exclude = ["examples*"] } }
 [tool.setuptools_scm]
 write_to = "pypbr/_version.py"
 fallback_version = "0.1.0"  # Added fallback version
+local_scheme = "no-local-version"  # Disable local version identifiers
