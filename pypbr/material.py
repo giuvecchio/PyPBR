@@ -414,6 +414,22 @@ class MaterialBase:
                 self._maps[name] = flipped_map
         return self
 
+    def roll(self, shift: Tuple[int, int]):
+        """
+        Roll all texture maps along the specified shift dimensions.
+
+        Args:
+            shift: The shift values for each dimension.
+
+        Returns:
+            MaterialBase: Returns self for method chaining.
+        """
+        for name, map_value in self._maps.items():
+            if map_value is not None:
+                rolled_map = F.roll(map_value, shift, dims=(1, 2))
+                self._maps[name] = rolled_map
+        return self
+
     def apply_transform(self, transform):
         """
         Apply a transformation to all texture maps.
