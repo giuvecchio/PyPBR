@@ -51,6 +51,7 @@ class MaterialBase:
         albedo_is_srgb: bool = True,
         normal: Optional[Union[Image.Image, np.ndarray, torch.FloatTensor]] = None,
         roughness: Optional[Union[Image.Image, np.ndarray, torch.FloatTensor]] = None,
+        device: torch.device = torch.device("cpu"),
         **kwargs,
     ):
         """
@@ -61,8 +62,10 @@ class MaterialBase:
             albedo_is_srgb: Flag indicating if albedo is in sRGB space.
             normal: The normal map.
             roughness: The roughness map.
+            device: The device to store the texture maps.
             **kwargs: Additional texture maps.
         """
+        self.device = device
         self._maps = {}
         self.albedo_is_srgb = albedo_is_srgb
 
@@ -132,9 +135,9 @@ class MaterialBase:
         if image is None:
             return None
         if isinstance(image, torch.FloatTensor):
-            return image.cpu()
+            return image.to(self.device)
         elif isinstance(image, np.ndarray):
-            return torch.from_numpy(image).float()
+            return torch.from_numpy(image).float().to(self.device)
         elif isinstance(image, Image.Image):
             # Handle different image modes
             if image.mode in ["I", "I;16", "I;16B", "I;16L", "I;16N"]:
@@ -144,16 +147,16 @@ class MaterialBase:
                 tensor = tensor.unsqueeze(0)  # Add channel dimension
                 # Normalize to [0, 1] range
                 tensor = tensor / 65535.0
-                return tensor
+                return tensor.to(self.device)
             elif image.mode == "F":
                 # 32-bit floating point image
                 np_image = np.array(image, dtype=np.float32)
                 tensor = torch.from_numpy(np_image)
                 tensor = tensor.unsqueeze(0)  # Add channel dimension
-                return tensor
+                return tensor.to(self.device)
             else:
                 # For other modes, use torchvision transforms
-                return TF.to_tensor(image)
+                return TF.to_tensor(image).to(self.device)
         else:
             raise TypeError(
                 f"Unsupported image type: {type(image)}. Supported types are PIL.Image.Image, np.ndarray, and torch.FloatTensor."
@@ -226,7 +229,24 @@ class MaterialBase:
         z = torch.sqrt(torch.clamp(1.0 - squared, min=0.0))
         normal = torch.cat([x, y, z], dim=0)
         normal = F.normalize(normal, dim=0)
-        return normal
+        return normal.to(self.device)
+
+    # Device Management
+    def to(self, device: torch.device):
+        """
+        Moves all tensors in the material to the specified device.
+
+        Args:
+            device (torch.device): The target device.
+
+        Returns:
+            MaterialBase: Returns self for method chaining.
+        """
+        self.device = device
+        for name, map_value in self._maps.items():
+            if map_value is not None:
+                self._maps[name] = map_value.to(device)
+        return self
 
     # Properties
     @property

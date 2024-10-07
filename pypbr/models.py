@@ -40,7 +40,7 @@ class CookTorranceBRDF(BRDFModel):
         ```
     """
 
-    def __init__(self, light_type: str = "point"):
+    def __init__(self, light_type: str = "point", override_device: torch.device = None):
         """
         Initialize the Cook-Torrance BRDF.
 
@@ -53,7 +53,7 @@ class CookTorranceBRDF(BRDFModel):
             raise ValueError(
                 f"Unsupported light_type: {self.light_type}. Must be 'directional' or 'point'."
             )
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.override_device = override_device
 
     def forward(
         self,
@@ -79,34 +79,35 @@ class CookTorranceBRDF(BRDFModel):
         Returns:
             Tensor: The reflected color at each point, shape (3, H, W).
         """
+        # Determine the device from the material
+        device = self.override_device or material.device
+
         # Move tensors to the correct device
-        view_dir = view_dir.to(self.device)
-        light_intensity = light_intensity.to(self.device)
+        view_dir = view_dir.to(device)
+        light_intensity = light_intensity.to(device)
 
         # Normalize view direction
         view_dir = F.normalize(view_dir, dim=0)
 
         # Get the material properties
         # Common properties
-        roughness = material.roughness.to(self.device)  # Shape (1, H, W)
-        normal_map = (
-            material.normal.to(self.device) if material.normal is not None else None
-        )
+        roughness = material.roughness.to(device)  # Shape (1, H, W)
+        normal_map = material.normal.to(device) if material.normal is not None else None
 
         # Determine the workflow based on material properties
         if hasattr(material, "metallic") and material.metallic is not None:
             # Basecolor-Metallic workflow
-            basecolor = material.linear_albedo.to(self.device)  # Shape (3, H, W)
-            metallic = material.metallic.to(self.device)  # Shape (1, H, W)
+            basecolor = material.linear_albedo.to(device)  # Shape (3, H, W)
+            metallic = material.metallic.to(device)  # Shape (1, H, W)
 
             # F0 is interpolated between dielectric and conductor
             F0 = torch.lerp(torch.full_like(basecolor, 0.04), basecolor, metallic)
         elif hasattr(material, "specular") and material.specular is not None:
             # Diffuse-Specular workflow
             basecolor = material.linear_albedo.to(
-                self.device
+                device
             )  # Diffuse color, shape (3, H, W)
-            specular = material.linear_specular.to(self.device)  # Shape (3, H, W)
+            specular = material.linear_specular.to(device)  # Shape (3, H, W)
 
             # F0 is the specular map
             F0 = specular
@@ -130,17 +131,17 @@ class CookTorranceBRDF(BRDFModel):
 
         if self.light_type == "directional":
             # For directional light, light_dir_or_position is light_dir
-            light_dir = light_dir_or_position.to(self.device)
+            light_dir = light_dir_or_position.to(device)
             light_dir = F.normalize(light_dir, dim=0)
             light_dir_map = light_dir.view(3, 1, 1).expand(3, H, W)
         elif self.light_type == "point":
             # For point light, light_dir_or_position is light_position
-            light_position = light_dir_or_position.to(self.device).view(3, 1, 1)
+            light_position = light_dir_or_position.to(device).view(3, 1, 1)
 
             # Generate positions grid for the surface points
             light_size = light_size or 1.0
-            x = torch.linspace(-light_size / 2, light_size / 2, W, device=self.device)
-            y = torch.linspace(-light_size / 2, light_size / 2, H, device=self.device)
+            x = torch.linspace(-light_size / 2, light_size / 2, W, device=device)
+            y = torch.linspace(-light_size / 2, light_size / 2, H, device=device)
 
             # Surface positions
             yv, xv = torch.meshgrid(y, x, indexing="ij")  # Correct 'ij' indexing
@@ -163,11 +164,11 @@ class CookTorranceBRDF(BRDFModel):
 
         # Use the normal map if provided, else use default normals
         if normal_map is not None:
-            normal = normal_map.to(self.device)
+            normal = normal_map.to(device)
         else:
             # Default normals pointing in +Z direction
             normal = (
-                torch.tensor([0.0, 0.0, 1.0], device=self.device)
+                torch.tensor([0.0, 0.0, 1.0], device=device)
                 .view(3, 1, 1)
                 .expand(3, H, W)
             )
