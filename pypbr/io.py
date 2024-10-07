@@ -70,7 +70,7 @@ def load_material_from_folder(
                         image = image.convert("RGB")
                     elif map_type == "height":
                         # For height maps, preserve the original mode if it's 16-bit or 32-bit
-                        if image.mode in ["I;16", "I;16B", "I;16L", "I;16N"]:
+                        if image.mode in ["I", "I;16", "I;16B", "I;16L", "I;16N"]:
                             # Image is 16-bit unsigned integer
                             pass  # Keep original mode
                         elif image.mode == "F":

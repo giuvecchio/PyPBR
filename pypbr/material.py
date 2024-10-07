@@ -11,6 +11,7 @@ Classes:
     DiffuseSpecularMaterial: Represents a PBR material using diffuse and specular maps.
 """
 
+import math
 from typing import Optional, Tuple, Union
 
 import numpy as np
@@ -19,7 +20,14 @@ import torch.nn.functional as F
 from PIL import Image
 from torchvision.transforms import functional as TF
 
-from .utils import linear_to_srgb, srgb_to_linear
+from .utils import (
+    linear_to_srgb,
+    srgb_to_linear,
+    rotate_normals,
+    invert_normal,
+    compute_normal_from_height,
+    compute_height_from_normal,
+)
 
 
 class MaterialBase:
@@ -36,6 +44,7 @@ class MaterialBase:
         roughness (torch.FloatTensor): The roughness map tensor.
     """
 
+    # Initialization and Attribute Management
     def __init__(
         self,
         albedo: Optional[Union[Image.Image, np.ndarray, torch.FloatTensor]] = None,
@@ -105,6 +114,51 @@ class MaterialBase:
                 f"'{type(self).__name__}' object has no attribute '{name}'"
             )
 
+    def _to_tensor(
+        self, image: Optional[Union[Image.Image, np.ndarray, torch.FloatTensor]]
+    ) -> Optional[torch.FloatTensor]:
+        """
+        Convert an image to a torch tensor.
+
+        Args:
+            image: The image to convert.
+
+        Returns:
+            torch.FloatTensor: The image as a tensor.
+
+        Raises:
+            TypeError: If the input image type is unsupported.
+        """
+        if image is None:
+            return None
+        if isinstance(image, torch.FloatTensor):
+            return image.cpu()
+        elif isinstance(image, np.ndarray):
+            return torch.from_numpy(image).float()
+        elif isinstance(image, Image.Image):
+            # Handle different image modes
+            if image.mode in ["I", "I;16", "I;16B", "I;16L", "I;16N"]:
+                # Convert 16-bit image to NumPy array
+                np_image = np.array(image, dtype=np.uint16)
+                tensor = torch.from_numpy(np_image.astype(np.float32))
+                tensor = tensor.unsqueeze(0)  # Add channel dimension
+                # Normalize to [0, 1] range
+                tensor = tensor / 65535.0
+                return tensor
+            elif image.mode == "F":
+                # 32-bit floating point image
+                np_image = np.array(image, dtype=np.float32)
+                tensor = torch.from_numpy(np_image)
+                tensor = tensor.unsqueeze(0)  # Add channel dimension
+                return tensor
+            else:
+                # For other modes, use torchvision transforms
+                return TF.to_tensor(image)
+        else:
+            raise TypeError(
+                f"Unsupported image type: {type(image)}. Supported types are PIL.Image.Image, np.ndarray, and torch.FloatTensor."
+            )
+
     def _process_map(self, name, value):
         """
         Process the input value and convert it to a tensor if necessary.
@@ -125,23 +179,6 @@ class MaterialBase:
             return tensor
         else:
             return tensor
-
-    @property
-    def linear_albedo(self):
-        """
-        Get the albedo map in linear space.
-
-        Returns:
-            torch.FloatTensor: The albedo map in linear space.
-        """
-        albedo = self._maps.get("albedo", None)
-        if albedo is not None:
-            if self.albedo_is_srgb:
-                return srgb_to_linear(albedo)
-            else:
-                return albedo
-        else:
-            return None
 
     def _process_normal_map(
         self, normal_map: Optional[torch.FloatTensor]
@@ -191,6 +228,41 @@ class MaterialBase:
         normal = F.normalize(normal, dim=0)
         return normal
 
+    # Properties
+    @property
+    def linear_albedo(self):
+        """
+        Get the albedo map in linear space.
+
+        Returns:
+            torch.FloatTensor: The albedo map in linear space.
+        """
+        albedo = self._maps.get("albedo", None)
+        if albedo is not None:
+            if self.albedo_is_srgb:
+                return srgb_to_linear(albedo)
+            else:
+                return albedo
+        else:
+            return None
+
+    @property
+    def size(self) -> Optional[Tuple[int, int]]:
+        """
+        Get the size of the texture maps.
+
+        Returns:
+            Optional[Tuple[int, int]]: A tuple (height, width) representing the size of the texture maps.
+            If multiple maps are present, returns the size of the first non-None map.
+            Returns None if no maps are available.
+        """
+        for map_value in self._maps.values():
+            if map_value is not None:
+                _, height, width = map_value.shape
+                return (height, width)
+        return None
+
+    # Transformation Methods
     def resize(self, size: Union[int, Tuple[int, int]], antialias: bool = True):
         """
         Resize all texture maps to the specified size.
@@ -240,16 +312,122 @@ class MaterialBase:
                 self._maps[name] = map_value.repeat(1, num_tiles, num_tiles)
         return self
 
-    def invert_normal(self):
+    def rotate(
+        self,
+        angle: float,
+        expand: bool = False,
+        padding_mode: str = "constant",
+    ):
         """
-        Invert the Y component of the normal map.
+        Rotate all texture maps by a given angle.
+
+        Args:
+            angle (float): The rotation angle in degrees.
+            expand (bool): Whether to expand the output image to hold the entire rotated image.
+            padding_mode (str): Padding mode. Options are 'constant' or 'circular'.
 
         Returns:
             MaterialBase: Returns self for method chaining.
         """
-        normal = self._maps.get("normal", None)
-        if normal is not None:
-            normal[1] = 1 - normal[1]
+        assert padding_mode in [
+            "constant",
+            "circular",
+        ], "Invalid padding mode. Must be 'constant' or 'circular'."
+
+        for name, map_value in self._maps.items():
+            if map_value is not None:
+                # Get the height and width of the image (Assuming map_value shape is (C, H, W))
+                height, width = map_value.shape[-2:]
+
+                # Convert the rotation angle from degrees to radians
+                angle_rad = math.radians(angle)
+
+                # Determine the target size after rotation
+                if expand:
+                    # When expanding, we compute the new size required to fit the rotated image
+                    new_width = math.ceil(
+                        abs(width * math.cos(angle_rad))
+                        + abs(height * math.sin(angle_rad))
+                    )
+                    new_height = math.ceil(
+                        abs(width * math.sin(angle_rad))
+                        + abs(height * math.cos(angle_rad))
+                    )
+                    height, width = new_height, new_width
+
+                # Compute symmetric padding amounts
+                padded_size = math.ceil(math.sqrt(height**2 + width**2))
+                pad_size = padded_size - height
+
+                # Pad the image
+                map_value = F.pad(
+                    map_value, (pad_size, pad_size, pad_size, pad_size), padding_mode
+                )
+
+                # Rotate the padded image
+                rotated_map = TF.rotate(map_value, angle, expand=True)
+
+                # Crop the rotated image to the target size
+                rotated_map = TF.center_crop(rotated_map, (height, width)).contiguous()
+
+                if name == "normal":
+                    # Rotate the normal vectors
+                    rotated_map = rotate_normals(rotated_map, angle)
+
+                self._maps[name] = rotated_map
+
+        return self
+
+    def flip_horizontal(self):
+        """Flip all texture maps horizontally.
+        When flipping normal maps, the X component is inverted.
+
+        Returns:
+            MaterialBase: Returns self for method chaining.
+        """
+        for name, map_value in self._maps.items():
+            if map_value is not None:
+                # Flip the map horizontally
+                flipped_map = map_value.flip(-1)  # Flip along the width dimension
+                if name == "normal":
+                    # Invert the X component of the normal map
+                    flipped_map = flipped_map.clone()
+                    flipped_map[0] = -flipped_map[0]
+                self._maps[name] = flipped_map
+        return self
+
+    def flip_vertical(self):
+        """Flip all texture maps vertically.
+        When flipping the normal map, the Y component is inverted.
+
+        Returns:
+            MaterialBase: Returns self for method chaining.
+        """
+        for name, map_value in self._maps.items():
+            if map_value is not None:
+                # Flip the map vertically
+                flipped_map = map_value.flip(-2)  # Flip along the height dimension
+                if name == "normal":
+                    # Invert the Y component of the normal map
+                    flipped_map = flipped_map.clone()
+                    flipped_map[1] = -flipped_map[1]
+                self._maps[name] = flipped_map
+        return self
+
+    def roll(self, shift: Tuple[int, int]):
+        """
+        Roll all texture maps along the specified shift dimensions.
+
+        Args:
+            shift: The shift values for each dimension.
+
+        Returns:
+            MaterialBase: Returns self for method chaining.
+        """
+        for name, map_value in self._maps.items():
+            if map_value is not None:
+                rolled_map = F.roll(map_value, shift, dims=(1, 2))
+                self._maps[name] = rolled_map
         return self
 
     def apply_transform(self, transform):
@@ -267,6 +445,79 @@ class MaterialBase:
                 self._maps[name] = transform(map_value)
         return self
 
+    # Normal Map Operations
+    def invert_normal(self):
+        """
+        Invert the Y component of the normal map.
+
+        Returns:
+            MaterialBase: Returns self for method chaining.
+        """
+        normal = self._maps.get("normal", None)
+        self._maps["normal"] = invert_normal(normal)
+        return self
+
+    def adjust_normal_strength(self, strength_factor: float):
+        """Adjust the strength of the normal map.
+
+        Args:
+            strength_factor (float): The factor to adjust the strength of the normal map.
+
+        Returns:
+            MaterialBase: Returns self for method chaining.
+        """
+        if self.normal is not None:
+            # Ensure the normal map is in [-1, 1]
+            normal = self.normal
+            # Adjust the X and Y components
+            normal[:2] *= strength_factor
+            # Re-normalize the normal vector
+            normal = F.normalize(normal, dim=0)
+            self._maps["normal"] = normal
+        return self
+
+    def compute_normal_from_height(self, scale: float = 1.0):
+        """
+        Compute the normal map from the height map.
+
+        Args:
+            scale (float): The scaling factor for the height map gradients.
+                            Controls the strength of the normals.
+
+        Returns:
+            MaterialBase: Returns self for method chaining.
+        """
+        height_map = self._maps.get("height", None)
+
+        # Compute the normal map from the height map
+        normal_map = compute_normal_from_height(height_map, scale)
+
+        # Store the normal map
+        self._maps["normal"] = normal_map
+
+        return self
+
+    def compute_height_from_normal(self, scale: float = 1.0):
+        """
+        Compute the height map from the normal map using Poisson reconstruction.
+
+        Args:
+            scale (float): Scaling factor for the gradients.
+
+        Returns:
+            MaterialBase: Returns self for method chaining.
+        """
+        normal_map = self._maps.get("normal", None)
+
+        # Compute the height map from the normal map
+        height_map = compute_height_from_normal(normal_map, scale)
+
+        # Store the height map
+        self._maps["height"] = height_map
+
+        return self
+
+    # Color Space Conversion
     def to_linear(self):
         """
         Convert the albedo map to linear space if it's in sRGB.
@@ -293,6 +544,7 @@ class MaterialBase:
             self.albedo_is_srgb = True
         return self
 
+    # Conversion Methods
     def to_numpy(self):
         """
         Convert all texture maps to NumPy arrays.
@@ -323,67 +575,7 @@ class MaterialBase:
                 maps[name] = None
         return maps
 
-    def _to_tensor(
-        self, image: Optional[Union[Image.Image, np.ndarray, torch.FloatTensor]]
-    ) -> Optional[torch.FloatTensor]:
-        """
-        Convert an image to a torch tensor.
-
-        Args:
-            image: The image to convert.
-
-        Returns:
-            torch.FloatTensor: The image as a tensor.
-
-        Raises:
-            TypeError: If the input image type is unsupported.
-        """
-        if image is None:
-            return None
-        if isinstance(image, torch.FloatTensor):
-            return image.cpu()
-        elif isinstance(image, np.ndarray):
-            return torch.from_numpy(image).float()
-        elif isinstance(image, Image.Image):
-            # Handle different image modes
-            if image.mode in ["I;16", "I;16B", "I;16L", "I;16N"]:
-                # Convert 16-bit image to NumPy array
-                np_image = np.array(image, dtype=np.uint16)
-                tensor = torch.from_numpy(np_image.astype(np.float32))
-                tensor = tensor.unsqueeze(0)  # Add channel dimension
-                # Normalize to [0, 1] range
-                tensor = tensor / 65535.0
-                return tensor
-            elif image.mode == "F":
-                # 32-bit floating point image
-                np_image = np.array(image, dtype=np.float32)
-                tensor = torch.from_numpy(np_image)
-                tensor = tensor.unsqueeze(0)  # Add channel dimension
-                return tensor
-            else:
-                # For other modes, use torchvision transforms
-                return TF.to_tensor(image)
-        else:
-            raise TypeError(
-                f"Unsupported image type: {type(image)}. Supported types are PIL.Image.Image, np.ndarray, and torch.FloatTensor."
-            )
-
-    @property
-    def size(self) -> Optional[Tuple[int, int]]:
-        """
-        Get the size of the texture maps.
-
-        Returns:
-            Optional[Tuple[int, int]]: A tuple (height, width) representing the size of the texture maps.
-            If multiple maps are present, returns the size of the first non-None map.
-            Returns None if no maps are available.
-        """
-        for map_value in self._maps.values():
-            if map_value is not None:
-                _, height, width = map_value.shape
-                return (height, width)
-        return None
-
+    # Utility Methods
     def __repr__(self):
         """
         Return a string representation of the Material object.

@@ -1,7 +1,8 @@
 import torch
 from torchvision.transforms.functional import to_pil_image
 
-from pypbr import CookTorranceBRDF, load_material_from_folder
+from pypbr import CookTorranceBRDF
+from pypbr.io import load_material_from_folder
 
 # Load material
 material = load_material_from_folder("./data/tiles", preferred_workflow="metallic")
