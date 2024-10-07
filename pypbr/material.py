@@ -26,6 +26,8 @@ from .utils import (
     srgb_to_linear,
     rotate_normals,
     invert_normal,
+    compute_normal_from_height,
+    compute_height_from_normal,
 )
 
 
@@ -401,6 +403,78 @@ class MaterialBase:
         for name, map_value in self._maps.items():
             if map_value is not None:
                 self._maps[name] = transform(map_value)
+        return self
+
+    # Normal Map Operations
+    def invert_normal(self):
+        """
+        Invert the Y component of the normal map.
+
+        Returns:
+            MaterialBase: Returns self for method chaining.
+        """
+        normal = self._maps.get("normal", None)
+        self._maps["normal"] = invert_normal(normal)
+        return self
+
+    def adjust_normal_strength(self, strength_factor: float):
+        """Adjust the strength of the normal map.
+
+        Args:
+            strength_factor (float): The factor to adjust the strength of the normal map.
+
+        Returns:
+            MaterialBase: Returns self for method chaining.
+        """
+        if self.normal is not None:
+            # Ensure the normal map is in [-1, 1]
+            normal = self.normal
+            # Adjust the X and Y components
+            normal[:2] *= strength_factor
+            # Re-normalize the normal vector
+            normal = F.normalize(normal, dim=0)
+            self._maps["normal"] = normal
+        return self
+
+    def compute_normal_from_height(self, scale: float = 1.0):
+        """
+        Compute the normal map from the height map.
+
+        Args:
+            scale (float): The scaling factor for the height map gradients.
+                            Controls the strength of the normals.
+
+        Returns:
+            MaterialBase: Returns self for method chaining.
+        """
+        height_map = self._maps.get("height", None)
+
+        # Compute the normal map from the height map
+        normal_map = compute_normal_from_height(height_map, scale)
+
+        # Store the normal map
+        self._maps["normal"] = normal_map
+
+        return self
+
+    def compute_height_from_normal(self, scale: float = 1.0):
+        """
+        Compute the height map from the normal map using Poisson reconstruction.
+
+        Args:
+            scale (float): Scaling factor for the gradients.
+
+        Returns:
+            MaterialBase: Returns self for method chaining.
+        """
+        normal_map = self._maps.get("normal", None)
+
+        # Compute the height map from the normal map
+        height_map = compute_height_from_normal(normal_map, scale)
+
+        # Store the height map
+        self._maps["height"] = height_map
+
         return self
 
     # Color Space Conversion
