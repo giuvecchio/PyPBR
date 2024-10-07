@@ -19,7 +19,6 @@ import torch
 import torch.nn.functional as F
 from PIL import Image
 from torchvision.transforms import functional as TF
-from torchvision.transforms.functional import rotate
 
 from .utils import (
     linear_to_srgb,
@@ -138,7 +137,7 @@ class MaterialBase:
             return torch.from_numpy(image).float()
         elif isinstance(image, Image.Image):
             # Handle different image modes
-            if image.mode in ["I;16", "I;16B", "I;16L", "I;16N"]:
+            if image.mode in ["I", "I;16", "I;16B", "I;16L", "I;16N"]:
                 # Convert 16-bit image to NumPy array
                 np_image = np.array(image, dtype=np.uint16)
                 tensor = torch.from_numpy(np_image.astype(np.float32))
@@ -366,7 +365,7 @@ class MaterialBase:
                 )
 
                 # Rotate the padded image
-                rotated_map = rotate(map_value, angle, expand=True)
+                rotated_map = TF.rotate(map_value, angle, expand=True)
 
                 # Crop the rotated image to the target size
                 rotated_map = TF.center_crop(rotated_map, (height, width)).contiguous()
@@ -379,15 +378,40 @@ class MaterialBase:
 
         return self
 
-    def invert_normal(self):
-        """
-        Invert the Y component of the normal map.
+    def flip_horizontal(self):
+        """Flip all texture maps horizontally.
+        When flipping normal maps, the X component is inverted.
 
         Returns:
             MaterialBase: Returns self for method chaining.
         """
-        normal = self._maps.get("normal", None)
-        self._maps["normal"] = invert_normal(normal)
+        for name, map_value in self._maps.items():
+            if map_value is not None:
+                # Flip the map horizontally
+                flipped_map = map_value.flip(-1)  # Flip along the width dimension
+                if name == "normal":
+                    # Invert the X component of the normal map
+                    flipped_map = flipped_map.clone()
+                    flipped_map[0] = -flipped_map[0]
+                self._maps[name] = flipped_map
+        return self
+
+    def flip_vertical(self):
+        """Flip all texture maps vertically.
+        When flipping the normal map, the Y component is inverted.
+
+        Returns:
+            MaterialBase: Returns self for method chaining.
+        """
+        for name, map_value in self._maps.items():
+            if map_value is not None:
+                # Flip the map vertically
+                flipped_map = map_value.flip(-2)  # Flip along the height dimension
+                if name == "normal":
+                    # Invert the Y component of the normal map
+                    flipped_map = flipped_map.clone()
+                    flipped_map[1] = -flipped_map[1]
+                self._maps[name] = flipped_map
         return self
 
     def apply_transform(self, transform):
