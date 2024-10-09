@@ -142,18 +142,27 @@ def blend_normals(
 
 
 def blend_on_height(
-    material1: MaterialBase, material2: MaterialBase, blend_width: float = 0.1
+    material1: MaterialBase,
+    material2: MaterialBase,
+    blend_width: float = 0.1,
+    shift: float = 0.0,
 ) -> MaterialBase:
     """
-    Blend two materials based on their height maps.
+    Blend two materials based on their height maps with an optional vertical shift.
 
     Args:
         material1 (MaterialBase): The first material.
         material2 (MaterialBase): The second material.
-        blend_width (float): Controls the sharpness of the blending transition.
+        blend_width (float, optional): Controls the sharpness of the blending transition.
+                                       Smaller values result in sharper transitions.
+                                       Defaults to 0.1.
+        shift (float, optional): Shifts the blending transition vertically.
+                                 Positive values raise the blending height,
+                                 while negative values lower it.
+                                 Defaults to 0.0.
 
     Returns:
-        MaterialBase: A new material resulting from blending material1 and material2.
+        MaterialBase: A new material resulting from blending material1 and material2 based on height.
 
     Raises:
         ValueError: If either material lacks a height map.
@@ -171,8 +180,11 @@ def blend_on_height(
         # Resize height2 to match height1's size
         height2 = TF.resize(height2, height1.shape[1:], antialias=True)
 
-    # Compute the blend mask based on the height difference
-    height_diff: torch.FloatTensor = height1 - height2
+    # Apply the shift to material1's height map
+    height1_shifted: torch.FloatTensor = height1 + shift
+
+    # Compute the blend mask based on the shifted height difference
+    height_diff: torch.FloatTensor = height1_shifted - height2
 
     # Apply a sigmoid function to create a smooth transition
     mask: torch.FloatTensor = torch.sigmoid(height_diff / (blend_width + 1e-6))
