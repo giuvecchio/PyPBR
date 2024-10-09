@@ -12,7 +12,7 @@ Classes:
 """
 
 import math
-from typing import Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -21,12 +21,12 @@ from PIL import Image
 from torchvision.transforms import functional as TF
 
 from .utils import (
-    linear_to_srgb,
-    srgb_to_linear,
-    rotate_normals,
-    invert_normal,
-    compute_normal_from_height,
     compute_height_from_normal,
+    compute_normal_from_height,
+    invert_normal,
+    linear_to_srgb,
+    rotate_normals,
+    srgb_to_linear,
 )
 
 
@@ -201,7 +201,12 @@ class MaterialBase:
         if normal_map.shape[0] == 2:
             # Compute the Z-component
             normal_map = self._compute_normal_map_z_component(normal_map)
+
         elif normal_map.shape[0] == 3:
+            # Check if the normal map is already normalized
+            if normal_map.min() < 0:
+                return normal_map
+
             # Convert from [0,1] to [-1,1]
             normal_map = normal_map * 2.0 - 1.0
             normal_map = F.normalize(normal_map, dim=0)
@@ -263,6 +268,20 @@ class MaterialBase:
                 return srgb_to_linear(albedo)
             else:
                 return albedo
+        else:
+            return None
+
+    @property
+    def normal_rgb(self):
+        """
+        Get the normal map in RGB space.
+
+        Returns:
+            torch.FloatTensor: The normal map in RGB space.
+        """
+        normal = self._maps.get("normal", None)
+        if normal is not None:
+            return (normal + 1.0) * 0.5
         else:
             return None
 
@@ -577,20 +596,53 @@ class MaterialBase:
             maps[name] = map_value.cpu().numpy() if map_value is not None else None
         return maps
 
-    def to_pil(self):
+    def to_pil(
+        self,
+        maps_mode: Dict[str, str] = None,
+    ):
         """
         Convert all texture maps to PIL Images.
+
+        Args:
+            maps_mode (Dict[str, str]): Optional dictionary specifying modes for each map type.
 
         Returns:
             dict: A dictionary containing PIL Images of the texture maps.
         """
+        # Default maps_mode if not provided
+        if maps_mode is None:
+            maps_mode = {}
+
         maps = {}
         for name, map_value in self._maps.items():
             if map_value is not None:
                 if name == "normal":
                     # Scale the normal map from [-1, 1] to [0, 1] before converting to PIL
                     map_value = (map_value + 1.0) * 0.5
-                maps[name] = TF.to_pil_image(map_value.cpu())
+
+                # Determine the mode for this map, default to 'RGB'
+                mode = maps_mode.get(name, "RGB")
+
+                # Convert the tensor to a PIL Image
+                map_value = map_value.cpu()
+
+                if mode in ["I", "I;16", "I;16B", "I;16L", "I;16N"]:
+                    # Handle 16-bit image conversion using numpy
+                    # Convert the image to numpy array
+                    image_np = map_value.numpy()
+
+                    # Scale image to 16-bit
+                    image_np = (image_np * 65535).astype(np.uint16)
+
+                    # Create a new PIL Image from the numpy array in mode 'I;16'
+                    maps[name] = Image.fromarray(image_np, mode="I;16")
+                else:
+                    # Determine the number of channels in the image
+                    mode = "RGB" if map_value.shape[0] == 3 else "L"
+
+                    # Ensure the image is in the desired mode
+                    image = TF.to_pil_image(map_value.cpu())
+                    maps[name] = image.convert(mode)
             else:
                 maps[name] = None
         return maps
