@@ -88,10 +88,19 @@ class HeightBlend(BlendMethod):
 
     Args:
         blend_width (float): Controls the sharpness of the blending transition.
+        shift (float): Shifts the blending transition vertically.
+                       Positive values raise the blending height,
+                       while negative values lower it.
+                       Defaults to 0.0.
     """
 
-    def __init__(self, blend_width: float = 0.1):
+    def __init__(
+        self,
+        blend_width: float = 0.1,
+        shift: float = 0.0,
+    ):
         self.blend_width: float = blend_width
+        self.shift: float = shift
 
     def __call__(
         self, material1: MaterialBase, material2: MaterialBase
@@ -106,7 +115,7 @@ class HeightBlend(BlendMethod):
         Returns:
             MaterialBase: A new material resulting from blending material1 and material2.
         """
-        return blend_on_height(material1, material2, self.blend_width)
+        return blend_on_height(material1, material2, self.blend_width, self.shift)
 
 
 class PropertyBlend(BlendMethod):
