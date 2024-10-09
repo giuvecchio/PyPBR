@@ -175,7 +175,7 @@ def blend_on_height(
     height_diff: torch.FloatTensor = height1 - height2
 
     # Apply a sigmoid function to create a smooth transition
-    mask: torch.FloatTensor = torch.sigmoid(height_diff / blend_width)
+    mask: torch.FloatTensor = torch.sigmoid(height_diff / (blend_width + 1e-6))
 
     return blend_with_mask(material1, material2, mask)
 
@@ -218,7 +218,7 @@ def blend_on_properties(
     prop_diff: torch.FloatTensor = prop1 - prop2
 
     # Apply a sigmoid function to create a smooth transition
-    mask: torch.FloatTensor = torch.sigmoid(prop_diff / blend_width)
+    mask: torch.FloatTensor = torch.sigmoid(prop_diff / (blend_width + 1e-6))
 
     return blend_with_mask(material1, material2, mask)
 
