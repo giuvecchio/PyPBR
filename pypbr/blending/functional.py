@@ -98,7 +98,7 @@ def blend_with_mask(
         else:
             if name == "normal":
                 # Blend normals correctly
-                blended_map = blend_normals(map1, map2, mask)
+                blended_map = _blend_normals(map1, map2, mask)
             else:
                 # Standard blending
                 blended_map = mask * map1 + (1 - mask) * map2
@@ -109,10 +109,10 @@ def blend_with_mask(
     blended_material.albedo_is_srgb = material1.albedo_is_srgb
     blended_material.device = material1.device
 
-    return blended_material
+    return blended_material, mask
 
 
-def blend_normals(
+def _blend_normals(
     normal1: torch.FloatTensor, normal2: torch.FloatTensor, mask: torch.FloatTensor
 ) -> torch.FloatTensor:
     """
