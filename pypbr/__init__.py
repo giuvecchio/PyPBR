@@ -5,6 +5,7 @@ This module provides transformations for PBR materials, similar to torchvision's
 It includes both functional APIs and transformation classes that can be composed.
 
 Modules:
+    blending: Classes for blending materials using various methodologies.
     io: Input/output functions for saving and loading materials.
     material: Classes representing PBR materials.
     models: Classes representing BRDF models.
@@ -24,12 +25,15 @@ Functions:
     srgb_to_linear,
 """
 
-from . import io, utils
+from . import blending, io, utils
 from ._version import version as __version__
 from .material import BasecolorMetallicMaterial, DiffuseSpecularMaterial, MaterialBase
 from .models import BRDFModel, CookTorranceBRDF
 
 __all__ = [
+    "blending",
+    "io",
+    "utils",
     "MaterialBase",
     "BasecolorMetallicMaterial",
     "DiffuseSpecularMaterial",
