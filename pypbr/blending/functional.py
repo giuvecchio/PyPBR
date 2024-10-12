@@ -5,9 +5,13 @@ This module provides functional interfaces for blending PBR materials using vari
 
 Functions:
     blend_materials: Blend two materials together using the specified method.
+
     blend_with_mask: Blend two materials using a provided mask.
+
     blend_on_height: Blend two materials based on their height maps.
+
     blend_on_properties: Blend two materials based on a specified property map.
+    
     blend_with_gradient: Blend two materials using a linear gradient mask.
 """
 

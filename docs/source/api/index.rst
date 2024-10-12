@@ -9,3 +9,4 @@ Python API
    utils
    io
    models
+   blending

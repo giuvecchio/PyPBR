@@ -7,6 +7,7 @@ implementations like the Cook-Torrance model, facilitating material rendering.
 
 Classes:
     BRDFModel: Abstract base class for BRDF models.
+    
     CookTorranceBRDF: Implementation of the Cook-Torrance BRDF model.
 """
 

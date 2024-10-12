@@ -1,14 +1,16 @@
 """
 pypbr.material
 
-This module defines the MaterialBase class and its subclasses, which encapsulate various texture maps
+This module defines the `MaterialBase` class and its subclasses, which encapsulate various texture maps
 used in Physically Based Rendering (PBR). It provides functionalities to manipulate
 and convert these texture maps for rendering purposes.
 
 Classes:
-    MaterialBase: Base class representing a PBR material.
-    BasecolorMetallicMaterial: Represents a PBR material using basecolor and metallic maps.
-    DiffuseSpecularMaterial: Represents a PBR material using diffuse and specular maps.
+    `MaterialBase`: Base class representing a PBR material.
+
+    `BasecolorMetallicMaterial`: Represents a PBR material using basecolor and metallic maps.
+
+    `DiffuseSpecularMaterial`: Represents a PBR material using diffuse and specular maps.
 """
 
 import math
