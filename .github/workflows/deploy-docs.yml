@@ -24,6 +24,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt  # If you have a requirements file
+        pip install pypbr
         pip install sphinx  # Ensure Sphinx is installed
         pip install sphinxawesome-theme  # Or any other theme you use
 
@@ -35,7 +36,7 @@ jobs:
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}  # GitHub token to authenticate
+        github_token: ${{ secrets.GH_PAGES }}  # GitHub token to authenticate
         publish_dir: ./docs/build/html  # Directory where Sphinx outputs the HTML
         destination_dir: '.'  # Destination directory in the target branch
         keep_files: true  # Optional: If you want to keep other files in the gh-pages branch
