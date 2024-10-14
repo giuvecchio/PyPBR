@@ -56,6 +56,7 @@ html_title = "PyPBR"
 
 html_static_path = ["_static"]
 # html_logo = "_static/logo.svg"
+html_favicon = "_static/favicon.ico"
 html_theme_options = {
     "logo_light": "_static/logo.svg",
     "logo_dark": "_static/logo.svg",
