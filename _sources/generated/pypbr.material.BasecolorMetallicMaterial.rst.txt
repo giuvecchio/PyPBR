@@ -1,0 +1,49 @@
+﻿pypbr.material.BasecolorMetallicMaterial
+========================================
+
+.. currentmodule:: pypbr.material
+
+.. autoclass:: BasecolorMetallicMaterial
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~BasecolorMetallicMaterial.__init__
+      ~BasecolorMetallicMaterial.adjust_normal_strength
+      ~BasecolorMetallicMaterial.apply_transform
+      ~BasecolorMetallicMaterial.compute_height_from_normal
+      ~BasecolorMetallicMaterial.compute_normal_from_height
+      ~BasecolorMetallicMaterial.crop
+      ~BasecolorMetallicMaterial.flip_horizontal
+      ~BasecolorMetallicMaterial.flip_vertical
+      ~BasecolorMetallicMaterial.invert_normal
+      ~BasecolorMetallicMaterial.resize
+      ~BasecolorMetallicMaterial.roll
+      ~BasecolorMetallicMaterial.rotate
+      ~BasecolorMetallicMaterial.save_to_folder
+      ~BasecolorMetallicMaterial.tile
+      ~BasecolorMetallicMaterial.to
+      ~BasecolorMetallicMaterial.to_diffuse_specular_material
+      ~BasecolorMetallicMaterial.to_linear
+      ~BasecolorMetallicMaterial.to_numpy
+      ~BasecolorMetallicMaterial.to_pil
+      ~BasecolorMetallicMaterial.to_srgb
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~BasecolorMetallicMaterial.linear_albedo
+      ~BasecolorMetallicMaterial.normal_rgb
+      ~BasecolorMetallicMaterial.size
+   
+   

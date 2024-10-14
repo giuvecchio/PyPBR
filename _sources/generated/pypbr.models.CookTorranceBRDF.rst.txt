@@ -1,0 +1,81 @@
+﻿pypbr.models.CookTorranceBRDF
+=============================
+
+.. currentmodule:: pypbr.models
+
+.. autoclass:: CookTorranceBRDF
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~CookTorranceBRDF.__init__
+      ~CookTorranceBRDF.add_module
+      ~CookTorranceBRDF.apply
+      ~CookTorranceBRDF.bfloat16
+      ~CookTorranceBRDF.buffers
+      ~CookTorranceBRDF.children
+      ~CookTorranceBRDF.compile
+      ~CookTorranceBRDF.cpu
+      ~CookTorranceBRDF.cuda
+      ~CookTorranceBRDF.double
+      ~CookTorranceBRDF.eval
+      ~CookTorranceBRDF.extra_repr
+      ~CookTorranceBRDF.float
+      ~CookTorranceBRDF.forward
+      ~CookTorranceBRDF.fresnel_schlick
+      ~CookTorranceBRDF.geometry_schlick_ggx
+      ~CookTorranceBRDF.geometry_smith
+      ~CookTorranceBRDF.get_buffer
+      ~CookTorranceBRDF.get_extra_state
+      ~CookTorranceBRDF.get_parameter
+      ~CookTorranceBRDF.get_submodule
+      ~CookTorranceBRDF.half
+      ~CookTorranceBRDF.ipu
+      ~CookTorranceBRDF.load_state_dict
+      ~CookTorranceBRDF.modules
+      ~CookTorranceBRDF.named_buffers
+      ~CookTorranceBRDF.named_children
+      ~CookTorranceBRDF.named_modules
+      ~CookTorranceBRDF.named_parameters
+      ~CookTorranceBRDF.normal_distribution_ggx
+      ~CookTorranceBRDF.parameters
+      ~CookTorranceBRDF.register_backward_hook
+      ~CookTorranceBRDF.register_buffer
+      ~CookTorranceBRDF.register_forward_hook
+      ~CookTorranceBRDF.register_forward_pre_hook
+      ~CookTorranceBRDF.register_full_backward_hook
+      ~CookTorranceBRDF.register_full_backward_pre_hook
+      ~CookTorranceBRDF.register_load_state_dict_post_hook
+      ~CookTorranceBRDF.register_module
+      ~CookTorranceBRDF.register_parameter
+      ~CookTorranceBRDF.register_state_dict_pre_hook
+      ~CookTorranceBRDF.requires_grad_
+      ~CookTorranceBRDF.set_extra_state
+      ~CookTorranceBRDF.share_memory
+      ~CookTorranceBRDF.state_dict
+      ~CookTorranceBRDF.to
+      ~CookTorranceBRDF.to_empty
+      ~CookTorranceBRDF.train
+      ~CookTorranceBRDF.type
+      ~CookTorranceBRDF.xpu
+      ~CookTorranceBRDF.zero_grad
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~CookTorranceBRDF.T_destination
+      ~CookTorranceBRDF.call_super_init
+      ~CookTorranceBRDF.dump_patches
+      ~CookTorranceBRDF.training
+   
+   

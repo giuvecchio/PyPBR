@@ -1,0 +1,22 @@
+﻿pypbr.blending.PropertyBlend
+============================
+
+.. currentmodule:: pypbr.blending
+
+.. autoclass:: PropertyBlend
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PropertyBlend.__init__
+   
+   
+
+   
+   
+   

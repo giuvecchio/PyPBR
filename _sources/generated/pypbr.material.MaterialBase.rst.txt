@@ -1,0 +1,48 @@
+﻿pypbr.material.MaterialBase
+===========================
+
+.. currentmodule:: pypbr.material
+
+.. autoclass:: MaterialBase
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MaterialBase.__init__
+      ~MaterialBase.adjust_normal_strength
+      ~MaterialBase.apply_transform
+      ~MaterialBase.compute_height_from_normal
+      ~MaterialBase.compute_normal_from_height
+      ~MaterialBase.crop
+      ~MaterialBase.flip_horizontal
+      ~MaterialBase.flip_vertical
+      ~MaterialBase.invert_normal
+      ~MaterialBase.resize
+      ~MaterialBase.roll
+      ~MaterialBase.rotate
+      ~MaterialBase.save_to_folder
+      ~MaterialBase.tile
+      ~MaterialBase.to
+      ~MaterialBase.to_linear
+      ~MaterialBase.to_numpy
+      ~MaterialBase.to_pil
+      ~MaterialBase.to_srgb
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~MaterialBase.linear_albedo
+      ~MaterialBase.normal_rgb
+      ~MaterialBase.size
+   
+   

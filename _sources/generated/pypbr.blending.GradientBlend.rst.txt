@@ -1,0 +1,22 @@
+﻿pypbr.blending.GradientBlend
+============================
+
+.. currentmodule:: pypbr.blending
+
+.. autoclass:: GradientBlend
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GradientBlend.__init__
+   
+   
+
+   
+   
+   

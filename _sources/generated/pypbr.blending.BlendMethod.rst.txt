@@ -1,0 +1,22 @@
+﻿pypbr.blending.BlendMethod
+==========================
+
+.. currentmodule:: pypbr.blending
+
+.. autoclass:: BlendMethod
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~BlendMethod.__init__
+   
+   
+
+   
+   
+   

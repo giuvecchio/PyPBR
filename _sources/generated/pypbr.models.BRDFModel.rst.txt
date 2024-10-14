@@ -1,0 +1,77 @@
+﻿pypbr.models.BRDFModel
+======================
+
+.. currentmodule:: pypbr.models
+
+.. autoclass:: BRDFModel
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~BRDFModel.__init__
+      ~BRDFModel.add_module
+      ~BRDFModel.apply
+      ~BRDFModel.bfloat16
+      ~BRDFModel.buffers
+      ~BRDFModel.children
+      ~BRDFModel.compile
+      ~BRDFModel.cpu
+      ~BRDFModel.cuda
+      ~BRDFModel.double
+      ~BRDFModel.eval
+      ~BRDFModel.extra_repr
+      ~BRDFModel.float
+      ~BRDFModel.forward
+      ~BRDFModel.get_buffer
+      ~BRDFModel.get_extra_state
+      ~BRDFModel.get_parameter
+      ~BRDFModel.get_submodule
+      ~BRDFModel.half
+      ~BRDFModel.ipu
+      ~BRDFModel.load_state_dict
+      ~BRDFModel.modules
+      ~BRDFModel.named_buffers
+      ~BRDFModel.named_children
+      ~BRDFModel.named_modules
+      ~BRDFModel.named_parameters
+      ~BRDFModel.parameters
+      ~BRDFModel.register_backward_hook
+      ~BRDFModel.register_buffer
+      ~BRDFModel.register_forward_hook
+      ~BRDFModel.register_forward_pre_hook
+      ~BRDFModel.register_full_backward_hook
+      ~BRDFModel.register_full_backward_pre_hook
+      ~BRDFModel.register_load_state_dict_post_hook
+      ~BRDFModel.register_module
+      ~BRDFModel.register_parameter
+      ~BRDFModel.register_state_dict_pre_hook
+      ~BRDFModel.requires_grad_
+      ~BRDFModel.set_extra_state
+      ~BRDFModel.share_memory
+      ~BRDFModel.state_dict
+      ~BRDFModel.to
+      ~BRDFModel.to_empty
+      ~BRDFModel.train
+      ~BRDFModel.type
+      ~BRDFModel.xpu
+      ~BRDFModel.zero_grad
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~BRDFModel.T_destination
+      ~BRDFModel.call_super_init
+      ~BRDFModel.dump_patches
+      ~BRDFModel.training
+   
+   

@@ -1,0 +1,23 @@
+﻿pypbr.blending.BlendFactory
+===========================
+
+.. currentmodule:: pypbr.blending
+
+.. autoclass:: BlendFactory
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~BlendFactory.__init__
+      ~BlendFactory.get_blend_method
+   
+   
+
+   
+   
+   

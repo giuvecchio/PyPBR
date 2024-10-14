@@ -1,0 +1,22 @@
+﻿pypbr.blending.HeightBlend
+==========================
+
+.. currentmodule:: pypbr.blending
+
+.. autoclass:: HeightBlend
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~HeightBlend.__init__
+   
+   
+
+   
+   
+   

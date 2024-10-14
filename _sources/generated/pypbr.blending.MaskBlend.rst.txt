@@ -1,0 +1,22 @@
+﻿pypbr.blending.MaskBlend
+========================
+
+.. currentmodule:: pypbr.blending
+
+.. autoclass:: MaskBlend
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MaskBlend.__init__
+   
+   
+
+   
+   
+   
