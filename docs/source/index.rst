@@ -69,3 +69,4 @@ Contents
    usage
    contributing
    api/index
+   tutorials/index
