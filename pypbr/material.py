@@ -1,14 +1,16 @@
 """
 pypbr.material
 
-This module defines the MaterialBase class and its subclasses, which encapsulate various texture maps
+This module defines the `MaterialBase` class and its subclasses, which encapsulate various texture maps
 used in Physically Based Rendering (PBR). It provides functionalities to manipulate
 and convert these texture maps for rendering purposes.
 
 Classes:
-    MaterialBase: Base class representing a PBR material.
-    BasecolorMetallicMaterial: Represents a PBR material using basecolor and metallic maps.
-    DiffuseSpecularMaterial: Represents a PBR material using diffuse and specular maps.
+    `MaterialBase`: Base class representing a PBR material.
+
+    `BasecolorMetallicMaterial`: Represents a PBR material using basecolor and metallic maps.
+
+    `DiffuseSpecularMaterial`: Represents a PBR material using diffuse and specular maps.
 """
 
 import math
@@ -32,7 +34,7 @@ from .utils import (
 
 class MaterialBase:
     """
-    A base class representing a PBR material.
+    Base Class for PBR Materials.
 
     This class provides common functionality for PBR materials, allowing for
     dynamic addition of texture maps and common operations such as resizing,
@@ -44,7 +46,6 @@ class MaterialBase:
         roughness (torch.FloatTensor): The roughness map tensor.
     """
 
-    # Initialization and Attribute Management
     def __init__(
         self,
         albedo: Optional[Union[Image.Image, np.ndarray, torch.FloatTensor]] = None,
@@ -58,11 +59,11 @@ class MaterialBase:
         Initialize the Material with optional texture maps.
 
         Args:
-            albedo: The albedo map.
-            albedo_is_srgb: Flag indicating if albedo is in sRGB space.
-            normal: The normal map.
-            roughness: The roughness map.
-            device: The device to store the texture maps.
+            albedo (Optional[Union[Image.Image, np.ndarray, torch.FloatTensor]]): The albedo map.
+            albedo_is_srgb (bool): Flag indicating if albedo is in sRGB space. Defaults to True.
+            normal (Optional[Union[Image.Image, np.ndarray, torch.FloatTensor]]): The normal map.
+            roughness (Optional[Union[Image.Image, np.ndarray, torch.FloatTensor]]): The roughness map.
+            device (torch.device): The device to store the texture maps. Defaults to CPU.
             **kwargs: Additional texture maps.
         """
         self.device = device

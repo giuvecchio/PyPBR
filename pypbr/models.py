@@ -7,6 +7,7 @@ implementations like the Cook-Torrance model, facilitating material rendering.
 
 Classes:
     BRDFModel: Abstract base class for BRDF models.
+    
     CookTorranceBRDF: Implementation of the Cook-Torrance BRDF model.
 """
 
@@ -34,10 +35,18 @@ class CookTorranceBRDF(BRDFModel):
     Supports both directional and point light sources.
 
     Example:
-        ```python
-        brdf = CookTorranceBRDF(light_type='directional')
-        color = brdf(material, view_dir, light_dir, light_intensity)
-        ```
+        .. code-block:: python
+
+            brdf = CookTorranceBRDF(light_type="point")
+
+            # Define the view direction, light direction, and light intensity
+            view_dir = torch.tensor([0.0, 0.0, 1.0])  # Viewing straight on
+            light_dir = torch.tensor([0.1, 0.1, 1.0])  # Light coming from slightly top right
+            light_intensity = torch.tensor([1.0, 1.0, 1.0])  # White light
+            light_size = 1.0
+
+            # Evaluate the BRDF to get the reflected color
+            color = brdf(material, view_dir, light_dir, light_intensity, light_size)
     """
 
     def __init__(self, light_type: str = "point", override_device: torch.device = None):

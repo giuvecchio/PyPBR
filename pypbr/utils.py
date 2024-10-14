@@ -7,10 +7,15 @@ representation during material rendering and shading computations.
 
 Functions:
     srgb_to_linear: Converts an sRGB texture to linear space.
+
     linear_to_srgb: Converts a linear texture to sRGB space.
+
     rotate_normals: Rotates the normals in a normal map by a given angle.
+
     invert_normal: Inverts the Y component of the normal map.
+
     compute_normal_from_height: Computes the normal map from a height map.
+    
     compute_height_from_normal: Computes the height map from a normal map.
 """
 

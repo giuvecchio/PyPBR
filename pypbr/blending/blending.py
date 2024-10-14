@@ -184,9 +184,6 @@ class GradientBlend(BlendMethod):
 class BlendFactory:
     """
     Factory class to instantiate blending methods.
-
-    Methods:
-        get_blend_method: Returns an instance of the specified blending method.
     """
 
     _BLEND_METHODS = {

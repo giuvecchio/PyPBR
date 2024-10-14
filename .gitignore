@@ -164,4 +164,6 @@ cython_debug/
 # VsCode
 .vscode/
 
+# Auto generated files
 pypbr/_version.py
+generated
