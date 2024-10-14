@@ -1,0 +1,44 @@
+# pyproject.toml
+
+[build-system]
+requires = [
+    "setuptools>=61.0",
+    "wheel",
+    "setuptools_scm[toml]>=6.2"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pypbr"
+# Declare that 'version' is a dynamic field managed by setuptools_scm
+dynamic = ["version"]
+description = "A Python library for easy and fast manipulation of PBR materials with PyTorch integration."
+readme = { file = "README.md", content-type = "text/markdown", encoding = "utf-8" }
+requires-python = ">=3.6"
+keywords = ["PBR", "materials", "PyTorch", "graphics"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent"
+]
+authors = [
+    { name = "Giuseppe Vecchio", email = "giuseppevecchio@hotmail.com" }
+]
+urls = { Homepage = "https://gvecchio.com/PyPBR/", Repository = "https://github.com/giuvecchio/PyPBR" }
+license = { text = "MIT License" }
+
+dependencies = [
+    "torch>=1.7.0",
+    "torchvision>=0.8.0",
+    "numpy>=1.18.0",
+    "Pillow>=8.0.0"
+]
+
+[tool.setuptools]
+packages = { find = { exclude = ["examples*"] } }
+
+[tool.setuptools_scm]
+write_to = "pypbr/_version.py"
+fallback_version = "0.1.0"  # Added fallback version
+local_scheme = "no-local-version"  # Disable local version identifiers
