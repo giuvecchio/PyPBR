@@ -25,7 +25,7 @@ classifiers = [
 authors = [
     { name = "Giuseppe Vecchio", email = "giuseppevecchio@hotmail.com" }
 ]
-urls = { Homepage = "https://github.com/giuvecchio/pypbr" }
+urls = { Homepage = "https://gvecchio.com/PyPBR/", Repository = "https://github.com/giuvecchio/PyPBR" }
 license = { text = "MIT License" }
 
 dependencies = [
