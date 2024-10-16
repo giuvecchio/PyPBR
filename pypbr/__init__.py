@@ -25,7 +25,7 @@ Functions:
     srgb_to_linear,
 """
 
-from . import blending, io, utils
+from . import blending, io, transforms, utils
 from ._version import version as __version__
 from .material import BasecolorMetallicMaterial, DiffuseSpecularMaterial, MaterialBase
 from .models import BRDFModel, CookTorranceBRDF
@@ -33,6 +33,7 @@ from .models import BRDFModel, CookTorranceBRDF
 __all__ = [
     "blending",
     "io",
+    "transforms",
     "utils",
     "MaterialBase",
     "BasecolorMetallicMaterial",
