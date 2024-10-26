@@ -13,7 +13,9 @@ Classes:
     `DiffuseSpecularMaterial`: Represents a PBR material using diffuse and specular maps.
 """
 
+import copy
 import math
+from collections.abc import Iterable, Mapping
 from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
@@ -675,6 +677,40 @@ class MaterialBase:
         from .io import save_material_to_folder
 
         save_material_to_folder(self, folder_path)
+
+    def clone(self):
+        """
+        Create a deep copy of the Material object.
+
+        Returns:
+            MaterialBase: A deep copy of the Material object.
+        """
+
+        def clone_obj(obj):
+            if isinstance(obj, torch.Tensor):
+                # Clone the tensor
+                return obj.clone()
+            elif isinstance(obj, Mapping):
+                # If it's a dict-like object, process each key-value pair
+                return {k: clone_obj(v) for k, v in obj.items()}
+            elif isinstance(obj, (list, tuple, set)):
+                # If it's a list, tuple, or set, process each element
+                if isinstance(obj, list):
+                    return [clone_obj(item) for item in obj]
+                elif isinstance(obj, tuple):
+                    return tuple(clone_obj(item) for item in obj)
+                elif isinstance(obj, set):
+                    return {clone_obj(item) for item in obj}
+            elif isinstance(obj, Iterable) and not isinstance(obj, (str, bytes)):
+                # For other iterable types, you can handle them as needed
+                # Here, we'll attempt to clone each element
+                return type(obj)(clone_obj(item) for item in obj)
+            else:
+                # For non-tensor and non-container objects, make a shallow copy
+                return copy.copy(obj)
+
+        new_dict = {k: clone_obj(v) for k, v in self.__dict__.items()}
+        return self.__class__(**new_dict)
 
 
 class BasecolorMetallicMaterial(MaterialBase):

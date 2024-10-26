@@ -3,9 +3,7 @@ pypbr.functional
 
 This module provides a set of functional transformations for manipulating texture maps in Physically Based Rendering (PBR) materials. Each transformation operates on a material instance and applies geometric, color space, or normal map adjustments to its texture maps (e.g., albedo, normal, roughness). These transformations can be used for rendering or preprocessing materials for machine learning tasks.
 
-Functions:
-    `copy_material`: Create a deep copy of a material instance.
-    
+Functions:   
     `resize`: Resize all texture maps in a material to a specified size.
 
     `random_resize`: Randomly resize all texture maps in a material to a size within a specified range.
@@ -43,24 +41,10 @@ Functions:
     `to_srgb`: Convert albedo and specular maps to sRGB color space.
 """
 
-from copy import deepcopy
 from random import random
 from typing import Tuple
 
 from ..material import MaterialBase
-
-
-def copy_material(material: MaterialBase) -> MaterialBase:
-    """
-    Create a deep copy of the given MaterialBase instance.
-
-    Args:
-        material (MaterialBase): The material to copy.
-
-    Returns:
-        MaterialBase: A new instance with copied maps.
-    """
-    return deepcopy(material)
 
 
 # Resizing
@@ -80,7 +64,7 @@ def resize(
     Returns:
         MaterialBase: A new material instance with resized maps.
     """
-    new_material = copy_material(material)
+    new_material = material.clone()
     new_material.resize(size=size, antialias=antialias)
     return new_material
 
@@ -100,7 +84,7 @@ def random_resize(
     Returns:
         MaterialBase: A new material instance with randomly resized maps.
     """
-    new_material = copy_material(material)
+    new_material = material.clone()
     height = int(min_size + (max_size - min_size) * random())
     width = int(min_size + (max_size - min_size) * random())
     new_material.resize(size=(height, width), antialias=antialias)
@@ -126,7 +110,7 @@ def crop(
     Returns:
         MaterialBase: A new material instance with cropped maps.
     """
-    new_material = copy_material(material)
+    new_material = material.clone()
     new_material.crop(top=top, left=left, height=height, width=width)
     return new_material
 
@@ -142,7 +126,7 @@ def center_crop(material: MaterialBase, crop_size: Tuple[int, int]) -> MaterialB
     Returns:
         MaterialBase: A new material instance with center cropped maps.
     """
-    new_material = copy_material(material)
+    new_material = material.clone()
     height, width = new_material.size
     crop_height, crop_width = crop_size
     top = (height - crop_height) // 2
@@ -162,7 +146,7 @@ def random_crop(material: MaterialBase, crop_size: Tuple[int, int]) -> MaterialB
     Returns:
         MaterialBase: A new material instance with randomly cropped maps.
     """
-    new_material = copy_material(material)
+    new_material = material.clone()
     height, width = new_material.size
     crop_height, crop_width = crop_size
     top = int((height - crop_height) * random())
@@ -185,7 +169,7 @@ def tile(material: MaterialBase, num_tiles: int) -> MaterialBase:
     Returns:
         MaterialBase: A new material instance with tiled maps.
     """
-    new_material = copy_material(material)
+    new_material = material.clone()
     new_material.tile(num_tiles=num_tiles)
     return new_material
 
@@ -211,7 +195,7 @@ def rotate(
     Returns:
         MaterialBase: A new material instance with rotated maps.
     """
-    new_material = copy_material(material)
+    new_material = material.clone()
     new_material.rotate(angle=angle, expand=expand, padding_mode=padding_mode)
     return new_material
 
@@ -236,7 +220,7 @@ def random_rotate(
     Returns:
         MaterialBase: A new material instance with randomly rotated maps.
     """
-    new_material = copy_material(material)
+    new_material = material.clone()
     angle = min_angle + (max_angle - min_angle) * random()
     new_material.rotate(angle=angle, expand=expand, padding_mode=padding_mode)
     return new_material
@@ -255,7 +239,7 @@ def flip_horizontal(material: MaterialBase) -> MaterialBase:
     Returns:
         MaterialBase: A new material instance with horizontally flipped maps.
     """
-    new_material = copy_material(material)
+    new_material = material.clone()
     new_material.flip_horizontal()
     return new_material
 
@@ -270,7 +254,7 @@ def flip_vertical(material: MaterialBase) -> MaterialBase:
     Returns:
         MaterialBase: A new material instance with vertically flipped maps.
     """
-    new_material = copy_material(material)
+    new_material = material.clone()
     new_material.flip_vertical()
     return new_material
 
@@ -286,7 +270,7 @@ def random_horizontal_flip(material: MaterialBase, p: float = 0.5) -> MaterialBa
     Returns:
         MaterialBase: A new material instance with randomly flipped maps.
     """
-    new_material = copy_material(material)
+    new_material = material.clone()
     if random() < p:
         new_material.flip_horizontal()
     return new_material
@@ -303,7 +287,7 @@ def random_vertical_flip(material: MaterialBase, p: float = 0.5) -> MaterialBase
     Returns:
         MaterialBase: A new material instance with randomly flipped maps.
     """
-    new_material = copy_material(material)
+    new_material = material.clone()
     if random() < p:
         new_material.flip_vertical()
     return new_material
@@ -323,7 +307,7 @@ def roll(material: MaterialBase, shift: Tuple[int, int]) -> MaterialBase:
     Returns:
         MaterialBase: A new material instance with rolled maps.
     """
-    new_material = copy_material(material)
+    new_material = material.clone()
     new_material.roll(shift=shift)
     return new_material
 
@@ -341,7 +325,7 @@ def invert_normal_map(material: MaterialBase) -> MaterialBase:
     Returns:
         MaterialBase: A new material instance with inverted normal map.
     """
-    new_material = copy_material(material)
+    new_material = material.clone()
     new_material.invert_normal()
     return new_material
 
@@ -359,7 +343,7 @@ def adjust_normal_strength(
     Returns:
         MaterialBase: A new material instance with adjusted normal strength.
     """
-    new_material = copy_material(material)
+    new_material = material.clone()
     new_material.adjust_normal_strength(strength_factor=strength_factor)
     return new_material
 
@@ -377,7 +361,7 @@ def to_linear(material: MaterialBase) -> MaterialBase:
     Returns:
         MaterialBase: A new material instance with linear albedo and specular maps.
     """
-    new_material = copy_material(material)
+    new_material = material.clone()
     new_material.to_linear()
     return new_material
 
@@ -392,6 +376,6 @@ def to_srgb(material: MaterialBase) -> MaterialBase:
     Returns:
         MaterialBase: A new material instance with sRGB albedo and specular maps.
     """
-    new_material = copy_material(material)
+    new_material = material.clone()
     new_material.to_srgb()
     return new_material
