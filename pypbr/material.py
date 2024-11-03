@@ -16,7 +16,7 @@ Classes:
 import copy
 import math
 from collections.abc import Iterable, Mapping
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -303,6 +303,107 @@ class MaterialBase:
                 _, height, width = map_value.shape
                 return (height, width)
         return None
+
+    # Dictionary and Tensor Methods
+    def as_dict(self) -> Dict[str, torch.FloatTensor]:
+        """
+        Get all texture maps as a dictionary.
+
+        Returns:
+            dict: A dictionary containing all texture maps.
+        """
+        return {name: map_value for name, map_value in self._maps.items()}
+
+    def as_tensor(
+        self, names: Optional[List[Union[str, Tuple[str, int]]]] = None
+    ) -> torch.FloatTensor:
+        """
+        Get a subset of texture maps stacked in a tensor.
+
+        Args:
+            names (Optional[List[Union[str, Tuple[str, int]]]]):
+                - If None or empty, include all maps with all channels.
+                - If a list of strings, include only those maps with all channels.
+                - If a list of tuples, each tuple contains:
+                    - map name (str)
+                    - number of channels to include (int)
+                - The list can contain a mix of strings and tuples.
+
+        Returns:
+            torch.FloatTensor: A tensor containing the specified texture maps stacked along the channel dimension.
+
+        Raises:
+            KeyError: If a specified map name does not exist in self._maps.
+            ValueError: If the requested number of channels exceeds the available channels in a map.
+            TypeError: If 'names' is not of the expected type.
+        """
+        # Build a list of (map_name, channel_limit) tuples
+        selected_maps: List[Tuple[str, Optional[int]]] = []
+
+        if not names:
+            # Include all maps with all channels
+            selected_maps = [(name, None) for name in self._maps.keys()]
+        else:
+            if not isinstance(names, list):
+                raise TypeError("names must be a list of strings or tuples.")
+
+            for item in names:
+                if isinstance(item, str):
+                    # Include all channels for this map
+                    selected_maps.append((item, None))
+                elif isinstance(item, tuple):
+                    if len(item) != 2:
+                        raise ValueError(
+                            "Each tuple in names must have exactly two elements: (map_name, channel_limit)."
+                        )
+                    map_name, channel_limit = item
+                    if not isinstance(map_name, str):
+                        raise TypeError(
+                            "The first element of each tuple must be a string (map name)."
+                        )
+                    if not isinstance(channel_limit, int) or channel_limit <= 0:
+                        raise ValueError(
+                            "The second element of each tuple must be a positive integer (channel limit)."
+                        )
+                    selected_maps.append((map_name, channel_limit))
+                else:
+                    raise TypeError(
+                        "Each item in names must be either a string or a tuple of (str, int)."
+                    )
+
+        tensors = []
+        for name, channel_limit in selected_maps:
+            if name not in self._maps:
+                raise KeyError(f"Map '{name}' does not exist in the texture maps.")
+
+            tensor = self._maps[name]
+            if not isinstance(tensor, torch.Tensor):
+                raise TypeError(f"Map '{name}' is not a torch.Tensor.")
+
+            if channel_limit is not None:
+                available_channels = tensor.size(0)
+                if channel_limit > available_channels:
+                    raise ValueError(
+                        f"Requested {channel_limit} channels for map '{name}', "
+                        f"but only {available_channels} channels are available."
+                    )
+                tensor = tensor[:channel_limit]
+
+            tensors.append(tensor)
+
+        if not tensors:
+            raise ValueError("No valid texture maps found to stack.")
+
+        # Ensure all tensors have the same spatial dimensions
+        spatial_dims = [tensor.shape[1:] for tensor in tensors]
+        if not all(dim == spatial_dims[0] for dim in spatial_dims):
+            raise ValueError(
+                "All texture maps must have the same spatial dimensions for concatenation."
+            )
+
+        # Concatenate tensors along the channel dimension
+        stacked_tensor = torch.cat(tensors, dim=0)
+        return stacked_tensor
 
     # Transformation Methods
     def resize(self, size: Union[int, Tuple[int, int]], antialias: bool = True):
