@@ -408,6 +408,60 @@ class MaterialBase:
         stacked_tensor = torch.cat(tensors, dim=0)
         return stacked_tensor
 
+    @classmethod
+    def from_tensor(cls, tensor: torch.FloatTensor, 
+                    names: Optional[List[Union[str, Tuple[str, int]]]] = None) -> "MaterialBase":
+        """
+        Create a new MaterialBase instance by unpacking a tensor into texture maps.
+        
+        Args:
+            tensor (torch.FloatTensor): A packed tensor of shape (C_total, H, W).
+            names (list): List specifying the order and channel count for each map.
+                          For example: [("albedo", 3), ("normal", 3), ("roughness", 1)]
+        
+        Returns:
+            An instance of MaterialBase (or a subclass) with its _maps populated.
+        """
+        # Create a new instance of the class.
+        instance = cls()
+        
+        # If no configuration is provided, we assume default ordering from instance._maps.
+        if not names:
+            names = [(name, instance._maps[name].size(0)) for name in instance._maps.keys()]
+        
+        # Determine the total number of channels expected.
+        total_channels_expected = 0
+        config = []
+        for item in names:
+            if isinstance(item, str):
+                if item in instance._maps and isinstance(instance._maps[item], torch.Tensor):
+                    channels = instance._maps[item].size(0)
+                else:
+                    raise KeyError(f"Cannot infer channel count for map '{item}'. Provide a tuple instead.")
+                config.append((item, channels))
+                total_channels_expected += channels
+            elif isinstance(item, tuple):
+                if len(item) != 2:
+                    raise ValueError("Each tuple must be (map_name, channel_limit).")
+                map_name, channel_limit = item
+                config.append((map_name, channel_limit))
+                total_channels_expected += channel_limit
+            else:
+                raise TypeError("Configuration items must be a string or tuple (str, int).")
+        
+        if tensor.size(0) != total_channels_expected:
+            raise ValueError(
+                f"Packed tensor has {tensor.size(0)} channels, but configuration expects {total_channels_expected} channels."
+            )
+        
+        # Unpack the tensor along the channel dimension.
+        index = 0
+        for map_name, num_channels in config:
+            instance._maps[map_name] = tensor[index:index+num_channels].clone()
+            index += num_channels
+        
+        return instance
+        
     # Transformation Methods
     def resize(self, size: Union[int, Tuple[int, int]], antialias: bool = True):
         """
