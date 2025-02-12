@@ -25,6 +25,7 @@ from PIL import Image
 from torchvision.transforms import functional as TF
 
 from .utils import (
+    NormalConvention,
     compute_height_from_normal,
     compute_normal_from_height,
     invert_normal,
@@ -54,6 +55,7 @@ class MaterialBase:
         albedo_is_srgb: bool = True,
         normal: Optional[Union[Image.Image, np.ndarray, torch.FloatTensor]] = None,
         roughness: Optional[Union[Image.Image, np.ndarray, torch.FloatTensor]] = None,
+        normal_convention: NormalConvention = NormalConvention.OPENGL,
         device: torch.device = torch.device("cpu"),
         **kwargs,
     ):
@@ -69,6 +71,7 @@ class MaterialBase:
             **kwargs: Additional texture maps.
         """
         self.device = device
+        self.normal_convention = normal_convention
         self._maps = {}
         self.albedo_is_srgb = albedo_is_srgb
 
@@ -633,7 +636,7 @@ class MaterialBase:
         height_map = self._maps.get("height", None)
 
         # Compute the normal map from the height map
-        normal_map = compute_normal_from_height(height_map, scale)
+        normal_map = compute_normal_from_height(height_map, scale, convention=self.normal_convention)
 
         # Store the normal map
         self._maps["normal"] = normal_map
@@ -653,7 +656,7 @@ class MaterialBase:
         normal_map = self._maps.get("normal", None)
 
         # Compute the height map from the normal map
-        height_map = compute_height_from_normal(normal_map, scale)
+        height_map = compute_height_from_normal(normal_map, scale, convention=self.normal_convention)
 
         # Store the height map
         self._maps["height"] = height_map
