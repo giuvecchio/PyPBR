@@ -13,8 +13,10 @@ Classes:
     `DiffuseSpecularMaterial`: Represents a PBR material using diffuse and specular maps.
 """
 
+import copy
 import math
-from typing import Dict, Optional, Tuple, Union
+from collections.abc import Iterable, Mapping
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -23,6 +25,7 @@ from PIL import Image
 from torchvision.transforms import functional as TF
 
 from .utils import (
+    NormalConvention,
     compute_height_from_normal,
     compute_normal_from_height,
     invert_normal,
@@ -52,6 +55,7 @@ class MaterialBase:
         albedo_is_srgb: bool = True,
         normal: Optional[Union[Image.Image, np.ndarray, torch.FloatTensor]] = None,
         roughness: Optional[Union[Image.Image, np.ndarray, torch.FloatTensor]] = None,
+        normal_convention: NormalConvention = NormalConvention.OPENGL,
         device: torch.device = torch.device("cpu"),
         **kwargs,
     ):
@@ -67,6 +71,7 @@ class MaterialBase:
             **kwargs: Additional texture maps.
         """
         self.device = device
+        self.normal_convention = normal_convention
         self._maps = {}
         self.albedo_is_srgb = albedo_is_srgb
 
@@ -302,6 +307,161 @@ class MaterialBase:
                 return (height, width)
         return None
 
+    # Dictionary and Tensor Methods
+    def as_dict(self) -> Dict[str, torch.FloatTensor]:
+        """
+        Get all texture maps as a dictionary.
+
+        Returns:
+            dict: A dictionary containing all texture maps.
+        """
+        return {name: map_value for name, map_value in self._maps.items()}
+
+    def as_tensor(
+        self, names: Optional[List[Union[str, Tuple[str, int]]]] = None
+    ) -> torch.FloatTensor:
+        """
+        Get a subset of texture maps stacked in a tensor.
+
+        Args:
+            names (Optional[List[Union[str, Tuple[str, int]]]]):
+                - If None or empty, include all maps with all channels.
+                - If a list of strings, include only those maps with all channels.
+                - If a list of tuples, each tuple contains:
+                    - map name (str)
+                    - number of channels to include (int)
+                - The list can contain a mix of strings and tuples.
+
+        Returns:
+            torch.FloatTensor: A tensor containing the specified texture maps stacked along the channel dimension.
+
+        Raises:
+            KeyError: If a specified map name does not exist in self._maps.
+            ValueError: If the requested number of channels exceeds the available channels in a map.
+            TypeError: If 'names' is not of the expected type.
+        """
+        # Build a list of (map_name, channel_limit) tuples
+        selected_maps: List[Tuple[str, Optional[int]]] = []
+
+        if not names:
+            # Include all maps with all channels
+            selected_maps = [(name, None) for name in self._maps.keys()]
+        else:
+            if not isinstance(names, list):
+                raise TypeError("names must be a list of strings or tuples.")
+
+            for item in names:
+                if isinstance(item, str):
+                    # Include all channels for this map
+                    selected_maps.append((item, None))
+                elif isinstance(item, tuple):
+                    if len(item) != 2:
+                        raise ValueError(
+                            "Each tuple in names must have exactly two elements: (map_name, channel_limit)."
+                        )
+                    map_name, channel_limit = item
+                    if not isinstance(map_name, str):
+                        raise TypeError(
+                            "The first element of each tuple must be a string (map name)."
+                        )
+                    if not isinstance(channel_limit, int) or channel_limit <= 0:
+                        raise ValueError(
+                            "The second element of each tuple must be a positive integer (channel limit)."
+                        )
+                    selected_maps.append((map_name, channel_limit))
+                else:
+                    raise TypeError(
+                        "Each item in names must be either a string or a tuple of (str, int)."
+                    )
+
+        tensors = []
+        for name, channel_limit in selected_maps:
+            if name not in self._maps:
+                raise KeyError(f"Map '{name}' does not exist in the texture maps.")
+
+            tensor = self._maps[name]
+            if not isinstance(tensor, torch.Tensor):
+                raise TypeError(f"Map '{name}' is not a torch.Tensor.")
+
+            if channel_limit is not None:
+                available_channels = tensor.size(0)
+                if channel_limit > available_channels:
+                    raise ValueError(
+                        f"Requested {channel_limit} channels for map '{name}', "
+                        f"but only {available_channels} channels are available."
+                    )
+                tensor = tensor[:channel_limit]
+
+            tensors.append(tensor)
+
+        if not tensors:
+            raise ValueError("No valid texture maps found to stack.")
+
+        # Ensure all tensors have the same spatial dimensions
+        spatial_dims = [tensor.shape[1:] for tensor in tensors]
+        if not all(dim == spatial_dims[0] for dim in spatial_dims):
+            raise ValueError(
+                "All texture maps must have the same spatial dimensions for concatenation."
+            )
+
+        # Concatenate tensors along the channel dimension
+        stacked_tensor = torch.cat(tensors, dim=0)
+        return stacked_tensor
+
+    @classmethod
+    def from_tensor(cls, tensor: torch.FloatTensor, 
+                    names: Optional[List[Union[str, Tuple[str, int]]]] = None) -> "MaterialBase":
+        """
+        Create a new MaterialBase instance by unpacking a tensor into texture maps.
+        
+        Args:
+            tensor (torch.FloatTensor): A packed tensor of shape (C_total, H, W).
+            names (list): List specifying the order and channel count for each map.
+                          For example: [("albedo", 3), ("normal", 3), ("roughness", 1)]
+        
+        Returns:
+            An instance of MaterialBase (or a subclass) with its _maps populated.
+        """
+        # Create a new instance of the class.
+        instance = cls()
+        
+        # If no configuration is provided, we assume default ordering from instance._maps.
+        if not names:
+            names = [(name, instance._maps[name].size(0)) for name in instance._maps.keys()]
+        
+        # Determine the total number of channels expected.
+        total_channels_expected = 0
+        config = []
+        for item in names:
+            if isinstance(item, str):
+                if item in instance._maps and isinstance(instance._maps[item], torch.Tensor):
+                    channels = instance._maps[item].size(0)
+                else:
+                    raise KeyError(f"Cannot infer channel count for map '{item}'. Provide a tuple instead.")
+                config.append((item, channels))
+                total_channels_expected += channels
+            elif isinstance(item, tuple):
+                if len(item) != 2:
+                    raise ValueError("Each tuple must be (map_name, channel_limit).")
+                map_name, channel_limit = item
+                config.append((map_name, channel_limit))
+                total_channels_expected += channel_limit
+            else:
+                raise TypeError("Configuration items must be a string or tuple (str, int).")
+        
+        if tensor.size(0) != total_channels_expected:
+            raise ValueError(
+                f"Packed tensor has {tensor.size(0)} channels, but configuration expects {total_channels_expected} channels."
+            )
+        
+        # Unpack the tensor along the channel dimension.
+        index = 0
+        for map_name, num_channels in config:
+            instance._maps[map_name] = tensor[index:index+num_channels].clone()
+            index += num_channels
+        
+        return instance
+        
     # Transformation Methods
     def resize(self, size: Union[int, Tuple[int, int]], antialias: bool = True):
         """
@@ -530,7 +690,7 @@ class MaterialBase:
         height_map = self._maps.get("height", None)
 
         # Compute the normal map from the height map
-        normal_map = compute_normal_from_height(height_map, scale)
+        normal_map = compute_normal_from_height(height_map, scale, convention=self.normal_convention)
 
         # Store the normal map
         self._maps["normal"] = normal_map
@@ -550,7 +710,7 @@ class MaterialBase:
         normal_map = self._maps.get("normal", None)
 
         # Compute the height map from the normal map
-        height_map = compute_height_from_normal(normal_map, scale)
+        height_map = compute_height_from_normal(normal_map, scale, convention=self.normal_convention)
 
         # Store the height map
         self._maps["height"] = height_map
@@ -675,6 +835,40 @@ class MaterialBase:
         from .io import save_material_to_folder
 
         save_material_to_folder(self, folder_path)
+
+    def clone(self):
+        """
+        Create a deep copy of the Material object.
+
+        Returns:
+            MaterialBase: A deep copy of the Material object.
+        """
+
+        def clone_obj(obj):
+            if isinstance(obj, torch.Tensor):
+                # Clone the tensor
+                return obj.clone()
+            elif isinstance(obj, Mapping):
+                # If it's a dict-like object, process each key-value pair
+                return {k: clone_obj(v) for k, v in obj.items()}
+            elif isinstance(obj, (list, tuple, set)):
+                # If it's a list, tuple, or set, process each element
+                if isinstance(obj, list):
+                    return [clone_obj(item) for item in obj]
+                elif isinstance(obj, tuple):
+                    return tuple(clone_obj(item) for item in obj)
+                elif isinstance(obj, set):
+                    return {clone_obj(item) for item in obj}
+            elif isinstance(obj, Iterable) and not isinstance(obj, (str, bytes)):
+                # For other iterable types, you can handle them as needed
+                # Here, we'll attempt to clone each element
+                return type(obj)(clone_obj(item) for item in obj)
+            else:
+                # For non-tensor and non-container objects, make a shallow copy
+                return copy.copy(obj)
+
+        new_dict = {k: clone_obj(v) for k, v in self.__dict__.items()}
+        return self.__class__(**new_dict)
 
 
 class BasecolorMetallicMaterial(MaterialBase):

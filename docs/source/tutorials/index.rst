@@ -11,6 +11,7 @@ Here you'll find step-by-step guides to help you master the library's features.
 
     01_material
     02_manipulation
-    03_brdf
-    04_blending
-    05_advanced
+    03_transforms
+    04_brdf
+    05_blending
+    06_advanced

@@ -19,11 +19,17 @@ Functions:
     compute_height_from_normal: Computes the height map from a normal map.
 """
 
+from enum import Enum
 import math
 
 import numpy as np
 import torch
 import torch.nn.functional as F
+
+
+class NormalConvention(Enum):
+    OPENGL = 0   # Upwards facing normals (e.g. [0,0,1])
+    DIRECTX = 1  # Typically, inverted Y axis
 
 
 def srgb_to_linear(texture: torch.Tensor) -> torch.Tensor:
@@ -119,15 +125,18 @@ def invert_normal(normals: torch.FloatTensor) -> torch.FloatTensor:
 
 
 def compute_normal_from_height(
-    height_map: torch.FloatTensor, scale: float = 1.0
+    height_map: torch.FloatTensor, 
+    scale: float = 1.0, 
+    convention: NormalConvention = NormalConvention.OPENGL
 ) -> torch.FloatTensor:
     """
     Compute the normal map from the height map.
 
     Args:
         height_map (torch.FloatTensor): The height map tensor.
-        scale (float): The scaling factor for the height map gradients.
-                        Controls the strength of the normals.
+        scale (float): Scaling factor for the gradients.
+        convention (NormalConvention): Normal convention to use. For OPENGL, the normal is computed as
+            (-dh/dx, -dh/dy, 1). For DIRECTX, you might use (-dh/dx, dh/dy, 1) or another variation.
 
     Returns:
         torch.FloatTensor: The normal map tensor.
@@ -152,9 +161,17 @@ def compute_normal_from_height(
     grad_x = grad_x * scale
     grad_y = grad_y * scale
 
+    # Adjust signs according to the convention
+    if convention == NormalConvention.OPENGL:
+        normal_x = -grad_x
+        normal_y = -grad_y
+    elif convention == NormalConvention.DIRECTX:
+        normal_x = -grad_x
+        normal_y = grad_y  # For instance, flipping the sign for Y differently
+    else:
+        raise ValueError("Unsupported normal convention.")
+
     # Create normal map components
-    normal_x = -grad_x
-    normal_y = -grad_y
     normal_z = torch.ones_like(height_map)
 
     # Concatenate components and normalize
@@ -165,13 +182,19 @@ def compute_normal_from_height(
 
 
 def compute_height_from_normal(
-    normal_map: torch.FloatTensor, scale: float = 1.0
+    normal_map: torch.FloatTensor, 
+    scale: float = 1.0, 
+    convention: NormalConvention = NormalConvention.OPENGL
 ) -> torch.FloatTensor:
     """
     Compute the height map from the normal map using Poisson reconstruction.
 
     Args:
+        normal_map (torch.FloatTensor): The normal map tensor.
         scale (float): Scaling factor for the gradients.
+        convention (NormalConvention): Convention for normal mapping.
+            OPENGL assumes upward facing normals and uses (-N_x/N_z, -N_y/N_z)
+            DIRECTX uses a different sign for the Y gradient.
 
     Returns:
         MaterialBase: Returns self for method chaining.
@@ -193,7 +216,13 @@ def compute_height_from_normal(
 
     # Compute gradients
     g_x = -N_x / N_z
-    g_y = N_y / N_z
+    # Determine the sign for the Y gradient based on the normal convention.
+    if convention == NormalConvention.OPENGL:
+        g_y = -N_y / N_z
+    elif convention == NormalConvention.DIRECTX:
+        g_y = N_y / N_z
+    else:
+        raise ValueError("Unsupported normal convention.")
 
     # Scale the gradients
     g_x = g_x * scale
