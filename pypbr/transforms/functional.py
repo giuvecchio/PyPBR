@@ -44,8 +44,7 @@ Functions:
 from random import random
 from typing import Tuple
 
-from ..material import MaterialBase
-
+from ..materials import MaterialBase
 
 # Resizing
 

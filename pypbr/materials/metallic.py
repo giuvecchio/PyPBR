@@ -17,7 +17,7 @@ from PIL import Image
 from torchvision.transforms import functional as TF
 
 from .base import MaterialBase
-from .diffuse import DiffuseSpecularMaterial
+
 
 class BasecolorMetallicMaterial(MaterialBase):
     """
@@ -60,6 +60,14 @@ class BasecolorMetallicMaterial(MaterialBase):
         if metallic is not None:
             self.metallic = metallic
 
+    @property
+    def basecolor(self):
+        return self.albedo
+
+    @basecolor.setter
+    def basecolor(self, value):
+        self.albedo = value
+
     def to_diffuse_specular_material(self, albedo_is_srgb: bool = False):
         """
         Convert the material from basecolor-metallic workflow to diffuse-specular workflow.
@@ -70,6 +78,8 @@ class BasecolorMetallicMaterial(MaterialBase):
         Returns:
             DiffuseSpecularMaterial: A new material instance in the diffuse-specular workflow.
         """
+        from .diffuse import DiffuseSpecularMaterial
+
         # Ensure albedo and metallic maps are available
         if self.albedo is None or self.metallic is None:
             raise ValueError(
@@ -108,4 +118,3 @@ class BasecolorMetallicMaterial(MaterialBase):
         )
 
         return diffuse_specular_material
-

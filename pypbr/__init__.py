@@ -27,8 +27,8 @@ Functions:
 
 from . import blending, io, transforms, utils
 from ._version import version as __version__
-from .material import BasecolorMetallicMaterial, DiffuseSpecularMaterial, MaterialBase
-from .models import BRDFModel, CookTorranceBRDF
+from .materials import BasecolorMetallicMaterial, DiffuseSpecularMaterial, MaterialBase
+from .models import CookTorranceBRDF
 
 __all__ = [
     "blending",

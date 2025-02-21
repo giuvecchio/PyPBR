@@ -16,13 +16,9 @@ import torch.nn.functional as F
 from PIL import Image
 from torchvision.transforms import functional as TF
 
+from ..utils import linear_to_srgb, srgb_to_linear
 from .base import MaterialBase
-from .metallic import BasecolorMetallicMaterial
 
-from ..utils import (
-    linear_to_srgb,
-    srgb_to_linear,
-)
 
 class DiffuseSpecularMaterial(MaterialBase):
     """
@@ -69,6 +65,31 @@ class DiffuseSpecularMaterial(MaterialBase):
         if specular is not None:
             self.specular = specular
 
+    @property
+    def diffuse(self):
+        return self.albedo
+
+    @diffuse.setter
+    def diffuse(self, value):
+        self.albedo = value
+
+    @property
+    def linear_specular(self):
+        """
+        Get the specular map in linear space.
+
+        Returns:
+            torch.FloatTensor: The albedo map in linear space.
+        """
+        specular = self._maps.get("specular", None)
+        if specular is not None:
+            if self.specular_is_srgb:
+                return srgb_to_linear(specular)
+            else:
+                return specular
+        else:
+            return None
+
     def to_basecolor_metallic_material(self, albedo_is_srgb: bool = False):
         """
         Convert the material from diffuse-specular workflow to basecolor-metallic workflow.
@@ -79,6 +100,8 @@ class DiffuseSpecularMaterial(MaterialBase):
         Returns:
             BasecolorMetallicMaterial: A new material instance in the basecolor-metallic workflow.
         """
+        from .metallic import BasecolorMetallicMaterial
+
         # Ensure diffuse and specular maps are available
         if self.albedo is None or self.specular is None:
             raise ValueError(
@@ -133,23 +156,6 @@ class DiffuseSpecularMaterial(MaterialBase):
         )
 
         return basecolor_metallic_material
-
-    @property
-    def linear_specular(self):
-        """
-        Get the specular map in linear space.
-
-        Returns:
-            torch.FloatTensor: The albedo map in linear space.
-        """
-        specular = self._maps.get("specular", None)
-        if specular is not None:
-            if self.specular_is_srgb:
-                return srgb_to_linear(specular)
-            else:
-                return specular
-        else:
-            return None
 
     def to_linear(self):
         """

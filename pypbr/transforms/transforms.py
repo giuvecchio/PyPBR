@@ -26,7 +26,7 @@ Classes:
 
 from typing import List, Tuple
 
-from ..material import MaterialBase
+from ..materials import MaterialBase
 from . import functional
 
 

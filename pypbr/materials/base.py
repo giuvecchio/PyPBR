@@ -405,35 +405,44 @@ class MaterialBase:
         return stacked_tensor
 
     @classmethod
-    def from_tensor(cls, tensor: torch.FloatTensor, 
-                    names: Optional[List[Union[str, Tuple[str, int]]]] = None) -> "MaterialBase":
+    def from_tensor(
+        cls,
+        tensor: torch.FloatTensor,
+        names: Optional[List[Union[str, Tuple[str, int]]]] = None,
+    ) -> "MaterialBase":
         """
         Create a new MaterialBase instance by unpacking a tensor into texture maps.
-        
+
         Args:
             tensor (torch.FloatTensor): A packed tensor of shape (C_total, H, W).
             names (list): List specifying the order and channel count for each map.
                           For example: [("albedo", 3), ("normal", 3), ("roughness", 1)]
-        
+
         Returns:
             An instance of MaterialBase (or a subclass) with its _maps populated.
         """
         # Create a new instance of the class.
         instance = cls()
-        
+
         # If no configuration is provided, we assume default ordering from instance._maps.
         if not names:
-            names = [(name, instance._maps[name].size(0)) for name in instance._maps.keys()]
-        
+            names = [
+                (name, instance._maps[name].size(0)) for name in instance._maps.keys()
+            ]
+
         # Determine the total number of channels expected.
         total_channels_expected = 0
         config = []
         for item in names:
             if isinstance(item, str):
-                if item in instance._maps and isinstance(instance._maps[item], torch.Tensor):
+                if item in instance._maps and isinstance(
+                    instance._maps[item], torch.Tensor
+                ):
                     channels = instance._maps[item].size(0)
                 else:
-                    raise KeyError(f"Cannot infer channel count for map '{item}'. Provide a tuple instead.")
+                    raise KeyError(
+                        f"Cannot infer channel count for map '{item}'. Provide a tuple instead."
+                    )
                 config.append((item, channels))
                 total_channels_expected += channels
             elif isinstance(item, tuple):
@@ -443,21 +452,23 @@ class MaterialBase:
                 config.append((map_name, channel_limit))
                 total_channels_expected += channel_limit
             else:
-                raise TypeError("Configuration items must be a string or tuple (str, int).")
-        
+                raise TypeError(
+                    "Configuration items must be a string or tuple (str, int)."
+                )
+
         if tensor.size(0) != total_channels_expected:
             raise ValueError(
                 f"Packed tensor has {tensor.size(0)} channels, but configuration expects {total_channels_expected} channels."
             )
-        
+
         # Unpack the tensor along the channel dimension.
         index = 0
         for map_name, num_channels in config:
-            instance._maps[map_name] = tensor[index:index+num_channels].clone()
+            instance._maps[map_name] = tensor[index : index + num_channels].clone()
             index += num_channels
-        
+
         return instance
-        
+
     # Transformation Methods
     def resize(self, size: Union[int, Tuple[int, int]], antialias: bool = True):
         """
@@ -651,7 +662,11 @@ class MaterialBase:
         """
         normal = self._maps.get("normal", None)
         self._maps["normal"] = invert_normal(normal)
-        self.normal_convention = NormalConvention.DIRECTX if self.normal_convention == NormalConvention.OPENGL else NormalConvention.OPENGL
+        self.normal_convention = (
+            NormalConvention.DIRECTX
+            if self.normal_convention == NormalConvention.OPENGL
+            else NormalConvention.OPENGL
+        )
         return self
 
     def adjust_normal_strength(self, strength_factor: float):
@@ -687,7 +702,9 @@ class MaterialBase:
         height_map = self._maps.get("height", None)
 
         # Compute the normal map from the height map
-        normal_map = compute_normal_from_height(height_map, scale, convention=self.normal_convention)
+        normal_map = compute_normal_from_height(
+            height_map, scale, convention=self.normal_convention
+        )
 
         # Store the normal map
         self._maps["normal"] = normal_map
@@ -707,7 +724,9 @@ class MaterialBase:
         normal_map = self._maps.get("normal", None)
 
         # Compute the height map from the normal map
-        height_map = compute_height_from_normal(normal_map, scale, convention=self.normal_convention)
+        height_map = compute_height_from_normal(
+            normal_map, scale, convention=self.normal_convention
+        )
 
         # Store the height map
         self._maps["height"] = height_map
@@ -829,7 +848,7 @@ class MaterialBase:
         Args:
             folder_path: The path to the folder where maps will be saved.
         """
-        from .io import save_material_to_folder
+        from ..io import save_material_to_folder
 
         save_material_to_folder(self, folder_path)
 
@@ -866,4 +885,3 @@ class MaterialBase:
 
         new_dict = {k: clone_obj(v) for k, v in self.__dict__.items()}
         return self.__class__(**new_dict)
-

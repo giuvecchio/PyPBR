@@ -25,6 +25,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+from .enums import NormalConvention
+
 
 def srgb_to_linear(texture: torch.Tensor) -> torch.Tensor:
     """
@@ -119,9 +121,9 @@ def invert_normal(normals: torch.FloatTensor) -> torch.FloatTensor:
 
 
 def compute_normal_from_height(
-    height_map: torch.FloatTensor, 
-    scale: float = 1.0, 
-    convention: NormalConvention = NormalConvention.OPENGL
+    height_map: torch.FloatTensor,
+    scale: float = 1.0,
+    convention: NormalConvention = NormalConvention.OPENGL,
 ) -> torch.FloatTensor:
     """
     Compute the normal map from the height map.
@@ -176,9 +178,9 @@ def compute_normal_from_height(
 
 
 def compute_height_from_normal(
-    normal_map: torch.FloatTensor, 
-    scale: float = 1.0, 
-    convention: NormalConvention = NormalConvention.OPENGL
+    normal_map: torch.FloatTensor,
+    scale: float = 1.0,
+    convention: NormalConvention = NormalConvention.OPENGL,
 ) -> torch.FloatTensor:
     """
     Compute the height map from the normal map using Poisson reconstruction.
