@@ -156,7 +156,7 @@ class CenterCrop:
         self.width = width
 
     def __call__(self, material: MaterialBase) -> MaterialBase:
-        return functional.center_crop(material, height=self.height, width=self.width)
+        return functional.center_crop(material, crop_size=(self.height, self.width))
 
 
 class RandomCrop:
@@ -176,7 +176,7 @@ class RandomCrop:
         self.width = width
 
     def __call__(self, material: MaterialBase) -> MaterialBase:
-        return functional.random_crop(material, height=self.height, width=self.width)
+        return functional.random_crop(material, crop_size=(self.height, self.width))
 
 
 # Tiling/Padding
@@ -299,8 +299,8 @@ class RandomHorizontalFlip:
     Randomly flip all texture maps in the material horizontally.
     """
 
-    def __call__(self, material: MaterialBase) -> MaterialBase:
-        return functional.random_horizontal_flip(material)
+    def __call__(self, material: MaterialBase, p: float = 0.5) -> MaterialBase:
+        return functional.random_horizontal_flip(material, p)
 
 
 class RandomVerticalFlip:
@@ -308,8 +308,8 @@ class RandomVerticalFlip:
     Randomly flip all texture maps in the material vertically.
     """
 
-    def __call__(self, material: MaterialBase) -> MaterialBase:
-        return functional.random_vertical_flip(material)
+    def __call__(self, material: MaterialBase, p: float = 0.5) -> MaterialBase:
+        return functional.random_vertical_flip(material, p)
 
 
 # Translation

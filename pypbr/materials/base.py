@@ -633,7 +633,7 @@ class MaterialBase:
         """
         for name, map_value in self._maps.items():
             if map_value is not None:
-                rolled_map = F.roll(map_value, shift, dims=(1, 2))
+                rolled_map = torch.roll(map_value, shift, dims=(1, 2))
                 self._maps[name] = rolled_map
         return self
 

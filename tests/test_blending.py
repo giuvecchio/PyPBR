@@ -1,26 +1,42 @@
+import os
+
+import pytest
 import torch
 
 from pypbr.blending.functional import blend_with_mask
-from pypbr.materials import MaterialBase
+from pypbr.io import load_material_from_folder
 
 
-def create_dummy_material(color_value, H=32, W=32):
-    # Create a dummy material with constant albedo and random normals
-    material = MaterialBase(
-        albedo=torch.full((3, H, W), color_value),
-        normal=torch.rand(3, H, W) * 2 - 1,
-        roughness=torch.rand(1, H, W),
-    )
-    return material
+@pytest.fixture
+def rocks_material_dir():
+    import os
+
+    return os.path.join(os.path.dirname(__file__), "data", "rocks")
 
 
-def test_blend_with_mask():
-    H, W = 32, 32
-    material1 = create_dummy_material(0.2, H, W)
-    material2 = create_dummy_material(0.8, H, W)
-    mask = torch.ones(1, H, W) * 0.5
-    blended, _ = blend_with_mask(material1, material2, mask)
-    # For a 50-50 blend, the albedo should be roughly the average
-    blended_albedo = blended.albedo
-    expected = (0.2 + 0.8) / 2
-    assert torch.allclose(blended_albedo.mean(), torch.tensor(expected), atol=0.1)
+@pytest.fixture
+def tiles_material_dir():
+    import os
+
+    return os.path.join(os.path.dirname(__file__), "data", "tiles")
+
+
+def test_blend_with_mask(rocks_material_dir, tiles_material_dir):
+    # Load two real materials from the dataset.
+    mat1 = load_material_from_folder(rocks_material_dir)
+    mat2 = load_material_from_folder(tiles_material_dir)
+
+    # Create a 50-50 blending mask.
+    H, W = mat1.size
+    mask = torch.full((1, H, W), 0.5)
+
+    # Blend the two materials.
+    blended, _ = blend_with_mask(mat1, mat2, mask)
+
+    # For a 50-50 blend, the albedo should be roughly the average of the two.
+    # (Here we compare the mean intensity of the albedo.)
+    avg1 = mat1.albedo.mean().item()
+    avg2 = mat2.albedo.mean().item()
+    expected = (avg1 + avg2) / 2
+    blended_avg = blended.albedo.mean().item()
+    assert abs(blended_avg - expected) < 0.1
