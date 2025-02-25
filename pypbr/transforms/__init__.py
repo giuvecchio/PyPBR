@@ -16,6 +16,7 @@ __all__ = [
     "functional",
     "Compose",
     "Resize",
+    "RandomResize",
     "Crop",
     "CenterCrop",
     "RandomCrop",

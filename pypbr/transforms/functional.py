@@ -1,5 +1,5 @@
 """
-pypbr.functional
+pypbr.transforms.functional
 
 This module provides a set of functional transformations for manipulating texture maps in Physically Based Rendering (PBR) materials. Each transformation operates on a material instance and applies geometric, color space, or normal map adjustments to its texture maps (e.g., albedo, normal, roughness). These transformations can be used for rendering or preprocessing materials for machine learning tasks.
 
@@ -44,8 +44,7 @@ Functions:
 from random import random
 from typing import Tuple
 
-from ..material import MaterialBase
-
+from ..materials import MaterialBase
 
 # Resizing
 

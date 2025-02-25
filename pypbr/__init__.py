@@ -1,43 +1,31 @@
 """
-pypbr.transforms
+pypbr: A Physically Based Rendering (PBR) Library
 
-This module provides transformations for PBR materials, similar to torchvision's transforms.
-It includes both functional APIs and transformation classes that can be composed.
+pypbr provides a comprehensive suite of tools for working with PBR materials, including:
+  - Material definitions and workflows (basecolor‑metallic, diffuse‑specular)
+  - Blending methods for combining material maps
+  - I/O utilities for loading and saving materials
+  - BRDF models for realistic shading
+  - Transformation functions for material preprocessing
+  - Utility functions for color space conversions and normal map operations
 
 Modules:
-    blending: Classes for blending materials using various methodologies.
-    io: Input/output functions for saving and loading materials.
-    material: Classes representing PBR materials.
-    models: Classes representing BRDF models.
-    utils: Utility functions for color space conversion.
-
-Classes:
-    MaterialBase,
-    BasecolorMetallicMaterial,
-    DiffuseSpecularMaterial,
-    BRDFModel,
-    CookTorranceBRDF,
-
-Functions:
-    load_material_from_folder,
-    save_material_to_folder,
-    linear_to_srgb,
-    srgb_to_linear,
+  - **blending**: Blending operations for PBR materials.
+  - **io**: Material input/output functionalities.
+  - **materials**: Core material classes and workflows.
+  - **models**: Implementation of BRDF models.
+  - **transforms**: Geometric and photometric transformations for materials.
+  - **utils**: Utility functions and enumerations.
 """
 
-from . import blending, io, transforms, utils
+from . import blending, io, materials, models, transforms, utils
 from ._version import version as __version__
-from .material import BasecolorMetallicMaterial, DiffuseSpecularMaterial, MaterialBase
-from .models import BRDFModel, CookTorranceBRDF
 
 __all__ = [
     "blending",
     "io",
+    "materials",
+    "models",
     "transforms",
     "utils",
-    "MaterialBase",
-    "BasecolorMetallicMaterial",
-    "DiffuseSpecularMaterial",
-    "BRDFModel",
-    "CookTorranceBRDF",
 ]
