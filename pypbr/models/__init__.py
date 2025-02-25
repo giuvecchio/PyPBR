@@ -8,8 +8,9 @@ Classes:
     CookTorranceBRDF: Implementation of the Cook-Torrance BRDF model.
 """
 
-from .cooktorrance import CookTorranceBRDF
+from .cooktorrance import BRDFModel, CookTorranceBRDF
 
 __all__ = [
+    "BRDFModel",
     "CookTorranceBRDF",
 ]
