@@ -17,7 +17,7 @@ import warnings
 from PIL import Image
 from typing import Optional, Dict, List, Type
 
-from .material import (
+from .materials import (
     MaterialBase,
     BasecolorMetallicMaterial,
     DiffuseSpecularMaterial,

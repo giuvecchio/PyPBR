@@ -16,7 +16,7 @@ from abc import ABC, abstractmethod
 
 import torch
 
-from ..material import MaterialBase
+from ..materials import MaterialBase
 from .functional import (
     blend_on_height,
     blend_on_properties,

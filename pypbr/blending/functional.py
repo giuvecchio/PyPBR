@@ -21,7 +21,7 @@ import torch
 import torch.nn.functional as F
 from torchvision.transforms import functional as TF
 
-from ..material import MaterialBase
+from ..materials import MaterialBase
 
 
 def blend_materials(
