@@ -10,7 +10,7 @@ material = load_material_from_folder("./data/tiles", preferred_workflow="metalli
 H, W = 512, 512
 material.resize((H, W)).tile(2)
 
-# Create an instance of the BRDF with the material
+# Create an instance of the BRDF
 brdf = CookTorranceBRDF(light_type="point")
 
 # Define the view direction, light direction, and light intensity
