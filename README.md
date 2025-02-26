@@ -26,10 +26,10 @@ pip install pypbr
 
 ### Creating a PBR Material
 
-To create a PBR material, use one of the provided classes from the `pypbr.material` module:
+To create a PBR material, use one of the provided classes from the `pypbr.materials` module:
 
 ```python
-from pypbr.material import BasecolorMetallicMaterial
+from pypbr.materials import BasecolorMetallicMaterial
 from PIL import Image
 
 # Load albedo and metallic maps
