@@ -5,7 +5,7 @@ Python API
    :maxdepth: 2
    :caption: Modules:
 
-   material
+   materials
    utils
    io
    models

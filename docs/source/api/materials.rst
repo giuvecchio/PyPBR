@@ -1,9 +1,9 @@
-material
+materials
 ===============
 
-.. currentmodule:: pypbr.material
+.. currentmodule:: pypbr.materials
 
-.. automodule:: pypbr.material
+.. automodule:: pypbr.materials
     :no-members:
 
 .. autosummary::

@@ -22,7 +22,7 @@ Here is an example of manually creating a `BasecolorMetallicMaterial` using torc
 .. code-block:: python
 
     import torch
-    from pypbr.material import BasecolorMetallicMaterial
+    from pypbr.materials import BasecolorMetallicMaterial
     from PIL import Image
 
     # Define an albedo map as a PIL image
