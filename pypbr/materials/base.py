@@ -157,6 +157,9 @@ class MaterialBase:
                 tensor = tensor.unsqueeze(0)  # Add channel dimension
                 return tensor.to(self.device)
             else:
+                if image.mode == "RGBA":
+                    # Convert RGBA to RGB
+                    image = image.convert("RGB")
                 # For other modes, use torchvision transforms
                 return TF.to_tensor(image).to(self.device)
         else:
