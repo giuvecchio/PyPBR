@@ -797,6 +797,9 @@ class MaterialBase:
         for name, map_value in self._maps.items():
             if map_value is not None:
                 if name == "normal":
+                    if map_value.shape[0] == 2:
+                        # Compute the Z-component
+                        map_value = self._compute_normal_map_z_component(map_value)
                     # Scale the normal map from [-1, 1] to [0, 1] before converting to PIL
                     map_value = (map_value + 1.0) * 0.5
 
