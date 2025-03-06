@@ -157,6 +157,9 @@ class MaterialBase:
                 tensor = tensor.unsqueeze(0)  # Add channel dimension
                 return tensor.to(self.device)
             else:
+                if image.mode == "RGBA":
+                    # Convert RGBA to RGB
+                    image = image.convert("RGB")
                 # For other modes, use torchvision transforms
                 return TF.to_tensor(image).to(self.device)
         else:
@@ -314,7 +317,9 @@ class MaterialBase:
         return {name: map_value for name, map_value in self._maps.items()}
 
     def as_tensor(
-        self, names: Optional[List[Union[str, Tuple[str, int]]]] = None
+        self,
+        names: Optional[List[Union[str, Tuple[str, int]]]] = None,
+        normalize: Optional[bool] = False,
     ) -> torch.FloatTensor:
         """
         Get a subset of texture maps stacked in a tensor.
@@ -327,6 +332,7 @@ class MaterialBase:
                     - map name (str)
                     - number of channels to include (int)
                 - The list can contain a mix of strings and tuples.
+            normalize (Optional[bool]): Wether to normalized in range [-1, 1].
 
         Returns:
             torch.FloatTensor: A tensor containing the specified texture maps stacked along the channel dimension.
@@ -387,6 +393,9 @@ class MaterialBase:
                         f"but only {available_channels} channels are available."
                     )
                 tensor = tensor[:channel_limit]
+
+            if normalize and name != "normal":
+                tensor = (tensor - 0.5) / 0.5
 
             tensors.append(tensor)
 
@@ -794,6 +803,9 @@ class MaterialBase:
         for name, map_value in self._maps.items():
             if map_value is not None:
                 if name == "normal":
+                    if map_value.shape[0] == 2:
+                        # Compute the Z-component
+                        map_value = self._compute_normal_map_z_component(map_value)
                     # Scale the normal map from [-1, 1] to [0, 1] before converting to PIL
                     map_value = (map_value + 1.0) * 0.5
 
