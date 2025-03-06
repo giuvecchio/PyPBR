@@ -317,7 +317,9 @@ class MaterialBase:
         return {name: map_value for name, map_value in self._maps.items()}
 
     def as_tensor(
-        self, names: Optional[List[Union[str, Tuple[str, int]]]] = None
+        self,
+        names: Optional[List[Union[str, Tuple[str, int]]]] = None,
+        normalize: Optional[bool] = False,
     ) -> torch.FloatTensor:
         """
         Get a subset of texture maps stacked in a tensor.
@@ -330,6 +332,7 @@ class MaterialBase:
                     - map name (str)
                     - number of channels to include (int)
                 - The list can contain a mix of strings and tuples.
+            normalize (Optional[bool]): Wether to normalized in range [-1, 1].
 
         Returns:
             torch.FloatTensor: A tensor containing the specified texture maps stacked along the channel dimension.
@@ -390,6 +393,9 @@ class MaterialBase:
                         f"but only {available_channels} channels are available."
                     )
                 tensor = tensor[:channel_limit]
+
+            if normalize and name != "normal":
+                tensor = (tensor - 0.5) / 0.5
 
             tensors.append(tensor)
 
