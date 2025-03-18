@@ -419,6 +419,7 @@ class MaterialBase:
         tensor: torch.FloatTensor,
         names: Optional[List[Union[str, Tuple[str, int]]]] = None,
         normal_convention: NormalConvention = NormalConvention.OPENGL,
+        is_normalized: bool = False,
     ) -> "MaterialBase":
         """
         Create a new MaterialBase instance by unpacking a tensor into texture maps.
@@ -475,6 +476,8 @@ class MaterialBase:
         index = 0
         for map_name, num_channels in config:
             map_split = tensor[index : index + num_channels].clone()
+            if is_normalized:
+                map_split = map_split * 0.5 + 0.5
             if map_name == "normal" and num_channels == 2:
                 map_split = instance._compute_normal_map_z_component(map_split)
             instance._maps[map_name] = map_split
