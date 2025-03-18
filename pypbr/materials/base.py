@@ -474,7 +474,10 @@ class MaterialBase:
         # Unpack the tensor along the channel dimension.
         index = 0
         for map_name, num_channels in config:
-            instance._maps[map_name] = tensor[index : index + num_channels].clone()
+            map_split = tensor[index : index + num_channels].clone()
+            if map_name == "normal" and num_channels == 2:
+                map_split = instance._compute_normal_map_z_component(map_split)
+            instance._maps[map_name] = map_split
             index += num_channels
 
         return instance
