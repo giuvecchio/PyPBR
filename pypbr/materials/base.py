@@ -236,10 +236,10 @@ class MaterialBase:
         x = normal_xy[0:1]
         y = normal_xy[1:2]
         squared = x**2 + y**2
-        z = torch.sqrt(torch.clamp(1.0 - squared, min=0.0))
+        eps = 1e-6
+        z = torch.sqrt(torch.clamp(1.0 - squared, min=eps))
         normal = torch.cat([x, y, z], dim=0)
-        normal = F.normalize(normal, dim=0)
-        return normal.to(self.device)
+        return F.normalize(normal, dim=0)
 
     # Device Management
     def to(self, device: torch.device):
