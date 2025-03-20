@@ -420,6 +420,7 @@ class MaterialBase:
         names: Optional[List[Union[str, Tuple[str, int]]]] = None,
         normal_convention: NormalConvention = NormalConvention.OPENGL,
         is_normalized: bool = False,
+        device: torch.device = torch.device("cpu"),
     ) -> "MaterialBase":
         """
         Create a new MaterialBase instance by unpacking a tensor into texture maps.
@@ -433,7 +434,7 @@ class MaterialBase:
             An instance of MaterialBase (or a subclass) with its _maps populated.
         """
         # Create a new instance of the class.
-        instance = cls(normal_convention=normal_convention)
+        instance = cls(normal_convention=normal_convention, device=device)
 
         # If no configuration is provided, we assume default ordering from instance._maps.
         if not names:
