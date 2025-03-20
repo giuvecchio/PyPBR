@@ -157,6 +157,9 @@ class MaterialBase:
                 tensor = tensor.unsqueeze(0)  # Add channel dimension
                 return tensor.to(self.device)
             else:
+                if image.mode == "RGBA":
+                    # Convert RGBA to RGB
+                    image = image.convert("RGB")
                 # For other modes, use torchvision transforms
                 return TF.to_tensor(image).to(self.device)
         else:
@@ -233,10 +236,10 @@ class MaterialBase:
         x = normal_xy[0:1]
         y = normal_xy[1:2]
         squared = x**2 + y**2
-        z = torch.sqrt(torch.clamp(1.0 - squared, min=0.0))
+        eps = 1e-6
+        z = torch.sqrt(torch.clamp(1.0 - squared, min=eps))
         normal = torch.cat([x, y, z], dim=0)
-        normal = F.normalize(normal, dim=0)
-        return normal.to(self.device)
+        return F.normalize(normal, dim=0)
 
     # Device Management
     def to(self, device: torch.device):
@@ -314,7 +317,9 @@ class MaterialBase:
         return {name: map_value for name, map_value in self._maps.items()}
 
     def as_tensor(
-        self, names: Optional[List[Union[str, Tuple[str, int]]]] = None
+        self,
+        names: Optional[List[Union[str, Tuple[str, int]]]] = None,
+        normalize: Optional[bool] = False,
     ) -> torch.FloatTensor:
         """
         Get a subset of texture maps stacked in a tensor.
@@ -327,6 +332,7 @@ class MaterialBase:
                     - map name (str)
                     - number of channels to include (int)
                 - The list can contain a mix of strings and tuples.
+            normalize (Optional[bool]): Wether to normalized in range [-1, 1].
 
         Returns:
             torch.FloatTensor: A tensor containing the specified texture maps stacked along the channel dimension.
@@ -388,6 +394,9 @@ class MaterialBase:
                     )
                 tensor = tensor[:channel_limit]
 
+            if normalize and name != "normal":
+                tensor = (tensor - 0.5) / 0.5
+
             tensors.append(tensor)
 
         if not tensors:
@@ -409,6 +418,9 @@ class MaterialBase:
         cls,
         tensor: torch.FloatTensor,
         names: Optional[List[Union[str, Tuple[str, int]]]] = None,
+        normal_convention: NormalConvention = NormalConvention.OPENGL,
+        is_normalized: bool = False,
+        device: torch.device = torch.device("cpu"),
     ) -> "MaterialBase":
         """
         Create a new MaterialBase instance by unpacking a tensor into texture maps.
@@ -422,7 +434,7 @@ class MaterialBase:
             An instance of MaterialBase (or a subclass) with its _maps populated.
         """
         # Create a new instance of the class.
-        instance = cls()
+        instance = cls(normal_convention=normal_convention, device=device)
 
         # If no configuration is provided, we assume default ordering from instance._maps.
         if not names:
@@ -464,7 +476,12 @@ class MaterialBase:
         # Unpack the tensor along the channel dimension.
         index = 0
         for map_name, num_channels in config:
-            instance._maps[map_name] = tensor[index : index + num_channels].clone()
+            map_split = tensor[index : index + num_channels].clone()
+            if is_normalized:
+                map_split = map_split * 0.5 + 0.5
+            if map_name == "normal" and num_channels == 2:
+                map_split = instance._compute_normal_map_z_component(map_split)
+            instance._maps[map_name] = map_split
             index += num_channels
 
         return instance
@@ -794,6 +811,9 @@ class MaterialBase:
         for name, map_value in self._maps.items():
             if map_value is not None:
                 if name == "normal":
+                    if map_value.shape[0] == 2:
+                        # Compute the Z-component
+                        map_value = self._compute_normal_map_z_component(map_value)
                     # Scale the normal map from [-1, 1] to [0, 1] before converting to PIL
                     map_value = (map_value + 1.0) * 0.5
 
