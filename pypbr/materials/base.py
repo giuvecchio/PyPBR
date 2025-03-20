@@ -236,10 +236,10 @@ class MaterialBase:
         x = normal_xy[0:1]
         y = normal_xy[1:2]
         squared = x**2 + y**2
-        z = torch.sqrt(torch.clamp(1.0 - squared, min=0.0))
+        eps = 1e-6
+        z = torch.sqrt(torch.clamp(1.0 - squared, min=eps))
         normal = torch.cat([x, y, z], dim=0)
-        normal = F.normalize(normal, dim=0)
-        return normal.to(self.device)
+        return F.normalize(normal, dim=0)
 
     # Device Management
     def to(self, device: torch.device):
@@ -418,6 +418,9 @@ class MaterialBase:
         cls,
         tensor: torch.FloatTensor,
         names: Optional[List[Union[str, Tuple[str, int]]]] = None,
+        normal_convention: NormalConvention = NormalConvention.OPENGL,
+        is_normalized: bool = False,
+        device: torch.device = torch.device("cpu"),
     ) -> "MaterialBase":
         """
         Create a new MaterialBase instance by unpacking a tensor into texture maps.
@@ -431,7 +434,7 @@ class MaterialBase:
             An instance of MaterialBase (or a subclass) with its _maps populated.
         """
         # Create a new instance of the class.
-        instance = cls()
+        instance = cls(normal_convention=normal_convention, device=device)
 
         # If no configuration is provided, we assume default ordering from instance._maps.
         if not names:
@@ -473,7 +476,12 @@ class MaterialBase:
         # Unpack the tensor along the channel dimension.
         index = 0
         for map_name, num_channels in config:
-            instance._maps[map_name] = tensor[index : index + num_channels].clone()
+            map_split = tensor[index : index + num_channels].clone()
+            if is_normalized:
+                map_split = map_split * 0.5 + 0.5
+            if map_name == "normal" and num_channels == 2:
+                map_split = instance._compute_normal_map_z_component(map_split)
+            instance._maps[map_name] = map_split
             index += num_channels
 
         return instance
