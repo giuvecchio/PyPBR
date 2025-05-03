@@ -477,7 +477,7 @@ class MaterialBase:
         index = 0
         for map_name, num_channels in config:
             map_split = tensor[index : index + num_channels].clone()
-            if is_normalized:
+            if is_normalized and map_name != "normal":
                 map_split = map_split * 0.5 + 0.5
             if map_name == "normal" and num_channels == 2:
                 map_split = instance._compute_normal_map_z_component(map_split)
