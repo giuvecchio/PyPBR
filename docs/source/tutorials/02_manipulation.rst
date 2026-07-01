@@ -21,7 +21,7 @@ Resize, Crop, Rotate, and Tile
 
 .. code-block:: python
 
-    from pypbr.material import BasecolorMetallicMaterial
+    from pypbr.materials import BasecolorMetallicMaterial
     from PIL import Image
 
     # Load a material
@@ -91,7 +91,7 @@ Convert Basecolor-Metallic to Diffuse-Specular
 
 .. code-block:: python
 
-    from pypbr.material import BasecolorMetallicMaterial
+    from pypbr.materials import BasecolorMetallicMaterial
 
     # Load a diffuse-specular material
     metallic_map = Image.open("path/to/specular_map.png")
@@ -107,7 +107,7 @@ If you have a `DiffuseSpecularMaterial` and need to convert it to a `BasecolorMe
 
 .. code-block:: python
 
-    from pypbr.material import DiffuseSpecularMaterial
+    from pypbr.materials import DiffuseSpecularMaterial
 
     # Load a diffuse-specular material
     specular_map = Image.open("path/to/specular_map.png")

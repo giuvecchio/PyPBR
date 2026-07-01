@@ -27,7 +27,7 @@ Here’s how to apply functional transforms, such as resizing, cropping, rotatin
 
 .. code-block:: python
 
-    from pypbr.material import BasecolorMetallicMaterial
+    from pypbr.materials import BasecolorMetallicMaterial
     from pypbr.functional import resize, crop, rotate, tile, flip_horizontal, to_linear
     from PIL import Image
 
@@ -60,7 +60,7 @@ Class-based transforms in **PyPBR** allow you to define transformations in an ob
 
 .. code-block:: python
 
-    from pypbr.material import BasecolorMetallicMaterial
+    from pypbr.materials import BasecolorMetallicMaterial
     from pypbr.transforms import Resize, Crop, Rotate, Tile, FlipHorizontal, ToLinear
     from PIL import Image
 
