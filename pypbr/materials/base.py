@@ -828,8 +828,13 @@ class MaterialBase:
                     # Convert the image to numpy array
                     image_np = map_value.numpy()
 
+                    # (1, H, W) -> (H, W); PIL "I;16" only accepts 2-D arrays
+                    if image_np.ndim == 3 and image_np.shape[0] == 1:
+                        image_np = image_np[0]
+
                     # Scale image to 16-bit
-                    image_np = (image_np * 65535).astype(np.uint16)
+                    # clip so out-of-[0,1] values don't wrap on the uint16 cast
+                    image_np = (image_np * 65535).clip(0, 65535).astype(np.uint16)
 
                     # Create a new PIL Image from the numpy array in mode 'I;16'
                     maps[name] = Image.fromarray(image_np, mode="I;16")
