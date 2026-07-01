@@ -21,7 +21,7 @@ Below is a custom PyTorch dataset class that loads PBR materials from folders.
     import os
     import torch
     from torch.utils.data import Dataset
-    from pypbr.material import load_material_from_folder
+    from pypbr.materials import load_material_from_folder
 
     class PBRMaterialDataset(Dataset):
         def __init__(self, root_dir, color_space='srgb', workflow='metallic', resolution=(256, 256)):

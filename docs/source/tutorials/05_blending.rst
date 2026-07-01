@@ -25,7 +25,7 @@ You can blend two materials using a mask, where the mask determines how much of 
 
 .. code-block:: python
 
-    from pypbr.material import BasecolorMetallicMaterial
+    from pypbr.materials import BasecolorMetallicMaterial
     from pypbr.blending.functional import blend_with_mask
     from PIL import Image
     import torch

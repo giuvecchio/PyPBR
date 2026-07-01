@@ -45,7 +45,7 @@ The light intensity decreases with distance, which creates distinct highlights a
 
     import torch
     from pypbr.models import CookTorranceBRDF
-    from pypbr.material import BasecolorMetallicMaterial
+    from pypbr.materials import BasecolorMetallicMaterial
     from PIL import Image
 
     # Load a material
@@ -81,7 +81,7 @@ The light rays are parallel, and the intensity is uniform across the entire scen
 
     import torch
     from pypbr.models import CookTorranceBRDF
-    from pypbr.material import BasecolorMetallicMaterial
+    from pypbr.materials import BasecolorMetallicMaterial
     from PIL import Image
 
     # Load a material

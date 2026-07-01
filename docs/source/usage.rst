@@ -23,7 +23,7 @@ To begin using PyPBR, you can import the necessary modules and create your first
 
 .. code-block:: python
 
-   from pypbr.material import BasecolorMetallicMaterial
+   from pypbr.materials import BasecolorMetallicMaterial
    from PIL import Image
 
    # Load albedo and metallic maps
